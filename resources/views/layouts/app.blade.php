@@ -41,6 +41,7 @@
             background: var(--cream);
             color: var(--brown);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         /* NAVBAR */
@@ -276,6 +277,67 @@
                 display: none; 
             }
         }
+
+        .mobile-nav-toggle,
+        .mobile-nav {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .nav-menu { display: none; }
+
+            .mobile-nav-toggle {
+                width: 42px;
+                height: 42px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                background: var(--white);
+                color: var(--brown);
+                cursor: pointer;
+            }
+
+            .mobile-nav {
+                position: absolute;
+                top: 100%;
+                left: 4%;
+                right: 4%;
+                width: auto;
+                margin: 0;
+                padding: 12px;
+                border: 1px solid var(--border);
+                border-radius: 18px;
+                background: var(--white);
+            }
+
+            .mobile-nav.open { display: grid; gap: 4px; }
+
+            .mobile-nav a {
+                padding: 12px 14px;
+                border-radius: 12px;
+                color: var(--brown);
+                font-weight: 700;
+                font-size: 14px;
+                text-decoration: none;
+            }
+
+            .mobile-nav a:hover { background: var(--linen); }
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 10px 4%; }
+            .logo-img { height: 50px !important; }
+            .logo-section { min-width: 0; }
+            .logo-img { max-width: 92px; }
+            .nav-right { min-width: 0; gap: 6px; }
+            .navbar .search-wrapper { width: 40px; flex: 0 0 40px; }
+            .navbar .search { width: 40px; height: 40px; padding: 0; font-size: 0; text-indent: -9999px; }
+            .navbar .search-icon { right: 0; left: 0; text-align: center; }
+            .notification-btn { display: none; }
+            .user-button { padding-right: 6px; }
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -288,8 +350,8 @@
 
         <div class="nav-menu">
             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">Beranda</a>
-            <a href="#">Jelajahi</a>
-            <a href="#">Topik</a>
+            <a href="{{ route('explore') }}" class="{{ request()->routeIs('explore') ? 'active' : '' }}">Jelajahi</a>
+            <a href="{{ route('explore') }}">Topik</a>
             <a href="{{ route('articles.create') }}">Tulis</a>
         </div>
 
@@ -302,6 +364,10 @@
             <button class="notification-btn">
                 <i class="far fa-bell"></i>
                 <span class="notification-badge"></span>
+            </button>
+
+            <button class="mobile-nav-toggle" type="button" aria-label="Buka menu" aria-expanded="false" onclick="toggleMobileNav(this)">
+                <i class="fas fa-bars"></i>
             </button>
 
             <div class="user-menu">
@@ -317,8 +383,11 @@
                     <a href="{{ route('profile.edit') }}" class="dropdown-item">
                         <i class="fas fa-user" style="margin-right: 10px;"></i> Profil
                     </a>
-                    <a href="#" class="dropdown-item">
+                    <a href="{{ route('articles.saved') }}" class="dropdown-item">
                         <i class="fas fa-bookmark" style="margin-right: 10px;"></i> Artikel Tersimpan
+                    </a>
+                    <a href="{{ route('articles.manage') }}" class="dropdown-item">
+                        <i class="fas fa-pen-to-square" style="margin-right: 10px;"></i> Kelola Karya
                     </a>
                     <div class="dropdown-divider"></div>
                     <form method="POST" action="{{ route('logout') }}">
@@ -330,6 +399,14 @@
                 </div>
             </div>
         </div>
+
+        <div class="mobile-nav" id="mobileNav">
+            <a href="{{ route('dashboard') }}">Beranda</a>
+            <a href="{{ route('explore') }}">Jelajahi</a>
+            <a href="{{ route('explore') }}">Topik</a>
+            <a href="{{ route('articles.create') }}">Tulis pengalaman</a>
+            <a href="{{ route('profile.edit') }}">Profil</a>
+        </div>
     </nav>
 
     <!-- Page Content -->
@@ -340,6 +417,13 @@
     <script>
         function toggleDropdown() {
             document.getElementById('userDropdown').classList.toggle('show');
+        }
+
+        function toggleMobileNav(button) {
+            const mobileNav = document.getElementById('mobileNav');
+            const isOpen = mobileNav.classList.toggle('open');
+            button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            button.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
         }
 
         // Close dropdown when clicking outside

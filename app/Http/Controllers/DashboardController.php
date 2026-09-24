@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\User;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -17,7 +16,8 @@ class DashboardController extends Controller
             ->first();
 
         // Get latest articles for feed
-        $articles = Article::with(['user', 'likes', 'comments'])
+        $articles = Article::with('user')
+            ->withCount(['likes', 'comments'])
             ->where('is_published', true)
             ->orderBy('published_at', 'desc')
             ->paginate(10);

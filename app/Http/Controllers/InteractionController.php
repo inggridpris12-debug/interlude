@@ -49,6 +49,22 @@ class InteractionController extends Controller
         ]);
     }
 
+    public function comment(Request $request, Article $article)
+    {
+        $validated = $request->validate([
+            'content' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $article->comments()->create([
+            'user_id' => auth()->id(),
+            'content' => $validated['content'],
+        ]);
+
+        return redirect()
+            ->route('articles.show', $article->slug)
+            ->with('success', 'Komentar berhasil ditambahkan.');
+    }
+
     public function follow(User $user)
     {
         $follower = auth()->user();

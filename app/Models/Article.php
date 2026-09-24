@@ -2,10 +2,33 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $title
+ * @property string|null $excerpt
+ * @property string $content
+ * @property string $category
+ * @property string $slug
+ * @property string|null $cover_image
+ * @property int $reading_time
+ * @property int $views_count
+ * @property bool $is_published
+ * @property bool $is_featured
+ * @property Carbon|null $published_at
+ * @property-read User $user
+ * @property-read Collection<int, Comment> $comments
+ * @property-read Collection<int, Like> $likes
+ * @property-read Collection<int, Bookmark> $bookmarks
+ * @property-read int $likes_count
+ * @property-read int $comments_count
+ */
 class Article extends Model
 {
     use HasFactory;
@@ -52,13 +75,19 @@ class Article extends Model
 
     public function isLikedBy($user)
     {
-        if (!$user) return false;
+        if (! $user) {
+            return false;
+        }
+
         return $this->likes()->where('user_id', $user->id)->exists();
     }
 
     public function isBookmarkedBy($user)
     {
-        if (!$user) return false;
+        if (! $user) {
+            return false;
+        }
+
         return $this->bookmarks()->where('user_id', $user->id)->exists();
     }
 
@@ -78,7 +107,7 @@ class Article extends Model
 
         static::creating(function ($article) {
             if (empty($article->slug)) {
-                $article->slug = Str::slug($article->title) . '-' . Str::random(6);
+                $article->slug = Str::slug($article->title).'-'.Str::random(6);
             }
         });
     }

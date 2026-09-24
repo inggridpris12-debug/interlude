@@ -1,141 +1,117 @@
 <x-app-layout>
     <div class="write-container">
-        
-        <!-- Header -->
+
         <div class="write-header">
-            <a href="{{ route('dashboard') }}" class="back-btn">
-                <i class="fas fa-arrow-left"></i> Batal
-            </a>
+            <div class="write-brand">
+                <span class="write-mark">I</span>
+                <strong>Interlude</strong>
+            </div>
+            <a href="{{ route('dashboard') }}" class="back-btn"><i class="fas fa-arrow-left"></i> Kembali</a>
             <div class="write-actions">
-                <button type="button" class="btn-draft" onclick="submitForm(false)">
-                    Simpan Draft
-                </button>
-                <button type="button" class="btn-publish" onclick="previewArticle()">
-                    Preview
-                </button>
-                <button type="button" class="btn-publish-primary" onclick="submitForm(true)">
-                    Publikasikan <i class="fas fa-check"></i>
-                </button>
+                <span class="save-status"><i class="fas fa-circle-check"></i> Draft tersimpan otomatis</span>
+                <button type="button" class="btn-publish" onclick="previewArticle()"><i class="far fa-eye"></i> Preview</button>
+                <button type="button" class="btn-publish-primary" onclick="submitForm(true)">{{ isset($article) ? 'Perbarui Artikel' : 'Publikasikan Karya' }} <i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
 
-        <!-- Form -->
-        <form id="articleForm" action="{{ route('articles.store') }}" method="POST" enctype="multipart/form-data">
+        <section class="community-banner">
+            <div class="community-icon"><i class="fas fa-pen-nib"></i></div>
+            <div>
+                <div class="community-title">Etika Narasi Interlude <span>· Prinsip Komunitas</span></div>
+                <p>Bukan tugas kuliah formal. Tulis apa adanya, bagikan kesalahan yang kamu pelajari agar adik tingkat tidak mengulanginya.</p>
+            </div>
+            <button type="button" class="community-link" onclick="document.getElementById('communityGuidelines').showModal()">Pelajari Pedoman Komunitas</button>
+        </section>
+
+        <form id="articleForm" action="{{ isset($article) ? route('articles.update', $article) : route('articles.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <input type="hidden" name="publish" id="publishInput" value="1">
+            @if(isset($article))
+                @method('PUT')
+            @endif
 
-            <div class="write-content">
-                
-                <!-- Title Input -->
-                <div class="form-group">
-                    <input 
-                        type="text" 
-                        name="title" 
-                        id="titleInput" 
-                        class="title-input" 
-                        placeholder="Judul artikel"
-                        value="{{ old('title') }}"
-                        required
-                    >
-                </div>
+            <div class="write-layout">
+                <div class="write-main">
+                    <div class="editor-meta-row">
+                        <label class="select-meta">Artikel Pengalaman Kuliah <i class="fas fa-chevron-down"></i></label>
+                        <span><i class="far fa-clock"></i> <span id="readingTime">1</span> Menit Baca</span>
+                        <span><i class="fas fa-align-left"></i> <span id="wordCountTop">0</span> Kata</span>
+                    </div>
 
-                <!-- Excerpt Input -->
-                <div class="form-group">
-                    <textarea 
-                        name="excerpt" 
-                        id="excerptInput" 
-                        class="excerpt-input" 
-                        placeholder="Ringkasan singkat artikel (opsional)"
-                        rows="2"
-                    >{{ old('excerpt') }}</textarea>
-                </div>
+                    <input type="text" name="title" id="titleInput" class="title-input" placeholder="Tulis judul pengalaman atau insight kuliahmu di sini..." value="{{ old('title', $article->title ?? '') }}" required>
+                    <textarea name="excerpt" id="excerptInput" class="excerpt-input" placeholder="Tambahkan ringkasan singkat agar pembaca tahu apa yang akan mereka temukan..." rows="2">{{ old('excerpt', $article->excerpt ?? '') }}</textarea>
 
-                <!-- Cover Image Upload -->
-                <div class="form-group">
-                    <div class="cover-upload" id="coverUpload">
-                        <input 
-                            type="file" 
-                            name="cover_image" 
-                            id="coverImage" 
-                            class="cover-input" 
-                            accept="image/*"
-                            onchange="previewImage(this)"
-                        >
-                        <div class="upload-placeholder" id="uploadPlaceholder">
-                            <i class="fas fa-image"></i>
-                            <p>Klik untuk upload cover artikel</p>
-                            <span class="upload-hint">PNG, JPG maksimal 2MB</span>
+                    <div class="topic-field">
+                        <span class="form-label">TOPIK:</span>
+                        <div class="category-select">
+                            @foreach($categories as $category)
+                                <label class="category-option">
+                                    <input type="radio" name="category" value="{{ $category }}" {{ old('category', $article->category ?? '') == $category ? 'checked' : '' }} required>
+                                    <span class="category-label">#{{ $category }}</span>
+                                </label>
+                            @endforeach
                         </div>
-                        <img id="imagePreview" class="image-preview" style="display: none;">
                     </div>
-                </div>
 
-                <!-- Category Select -->
-                <div class="form-group">
-                    <label class="form-label">Kategori</label>
-                    <div class="category-select">
-                        @foreach($categories as $category)
-                            <label class="category-option">
-                                <input 
-                                    type="radio" 
-                                    name="category" 
-                                    value="{{ $category }}"
-                                    {{ old('category') == $category ? 'checked' : '' }}
-                                    required
-                                >
-                                <span class="category-label">{{ $category }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                <!-- Content Editor (FIXED) -->
-                <div class="form-group">
-                    <label class="form-label">Konten</label>
+                    <div class="form-group editor-group">
+                        <label class="form-label sr-only" for="contentEditor">Konten artikel</label>
                     <div class="editor-toolbar">
-                        <button type="button" class="toolbar-btn" onclick="formatText('bold')" title="Bold">
-                            <i class="fas fa-bold"></i>
-                        </button>
-                        <button type="button" class="toolbar-btn" onclick="formatText('italic')" title="Italic">
-                            <i class="fas fa-italic"></i>
-                        </button>
-                        <button type="button" class="toolbar-btn" onclick="formatText('underline')" title="Underline">
-                            <i class="fas fa-underline"></i>
-                        </button>
-                        <div class="toolbar-divider"></div>
-                        <button type="button" class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Bullet list">
-                            <i class="fas fa-list-ul"></i>
-                        </button>
-                        <button type="button" class="toolbar-btn" onclick="formatText('insertOrderedList')" title="Numbered list">
-                            <i class="fas fa-list-ol"></i>
-                        </button>
-                        <div class="toolbar-divider"></div>
-                        <button type="button" class="toolbar-btn" onclick="formatText('formatBlock', 'H2')" title="Heading">
-                            <i class="fas fa-heading"></i>
-                        </button>
-                        <button type="button" class="toolbar-btn" onclick="formatText('formatBlock', 'blockquote')" title="Quote">
-                            <i class="fas fa-quote-left"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Visual Editor -->
-                    <div 
-                        id="contentEditor" 
-                        class="content-editor" 
-                        contenteditable="true"
-                        placeholder="Tulis ceritamu di sini..."
-                    >{{ old('content') }}</div>
-                    
-                    <!-- Hidden Textarea untuk dikirim ke Controller -->
-                    <textarea name="content" id="contentInput" style="display: none;">{{ old('content') }}</textarea>
-                    
-                    <div class="editor-hint">
-                        <span id="wordCount">0 kata</span> · {{ auth()->user()->name }}
+                            <button type="button" class="toolbar-btn" onclick="formatText('bold')" title="Tebal"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="formatText('italic')" title="Miring"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="formatText('formatBlock', 'H2')" title="Subjudul">H2</button>
+                            <button type="button" class="toolbar-btn" onclick="formatText('formatBlock', 'blockquote')" title="Kutipan"><i class="fas fa-quote-right"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="Daftar"><i class="fas fa-list-ul"></i></button>
+                            <button type="button" class="toolbar-btn" onclick="formatText('createLink', prompt('Masukkan URL'))" title="Tautan"><i class="fas fa-link"></i></button>
+                            <span class="toolbar-divider"></span>
+                            <button type="button" class="toolbar-btn toolbar-extra" title="Audio"><i class="fas fa-volume-high"></i> Audio</button>
+                            <button type="button" class="toolbar-btn toolbar-extra" title="Berkas"><i class="fas fa-paperclip"></i> Berkas</button>
+                        </div>
+
+                        <div id="contentEditor" class="content-editor" contenteditable="true" data-placeholder="Mulai tulis pengalamanmu di sini...">{{ old('content', $article->content ?? '') }}</div>
+                        <textarea name="content" id="contentInput" hidden>{{ old('content', $article->content ?? '') }}</textarea>
+
+                        <div class="editor-footer">
+                            <span><i class="far fa-circle-check"></i> Interlude AutoSync aktif ke penyimpanan lokal &amp; cloud kampus</span>
+                            <span><i class="fas fa-lock"></i> {{ auth()->user()->name }}</span>
+                        </div>
                     </div>
                 </div>
+
+                <aside class="write-sidebar">
+                    <section class="sidebar-panel cover-panel">
+                        <div class="sidebar-panel-heading"><h2>Gambar Sampul</h2><span>DISARANKAN 16:9</span></div>
+                        <div class="cover-upload" id="coverUpload">
+                            <input type="file" name="cover_image" id="coverImage" class="cover-input" accept="image/*" onchange="previewImage(this)">
+                            <div class="upload-placeholder" id="uploadPlaceholder"><i class="fas fa-image"></i><p>Pilih gambar sampul</p><span class="upload-hint">JPG atau PNG, maksimal 2MB</span></div>
+                            <img id="imagePreview" class="image-preview" src="{{ isset($article) && $article->cover_image ? asset('storage/' . $article->cover_image) : '' }}" style="display: {{ isset($article) && $article->cover_image ? 'block' : 'none' }};">
+                        </div>
+                        <p class="sidebar-help">Pilih foto yang membantu pembaca langsung memahami suasana cerita kamu.</p>
+                    </section>
+
+                    <section class="sidebar-panel">
+                        <div class="sidebar-panel-heading"><h2>Jangkauan &amp; Privasi</h2></div>
+                        <label class="privacy-option"><input type="radio" name="publish" value="1" {{ !isset($article) || $article->is_published ? 'checked' : '' }}><span><strong>Publik Seluruh Kampus</strong><small>Dapat dibaca dan ditemukan seluruh mahasiswa di UI, UGM, Unair, dan 140+ kampus lainnya.</small></span></label>
+                        <label class="privacy-option"><input type="radio" name="publish" value="0" {{ isset($article) && ! $article->is_published ? 'checked' : '' }}><span><strong>Khusus Mahasiswa Terverifikasi</strong><small>Hanya dapat diakses oleh mahasiswa yang memiliki email resmi.</small></span></label>
+                    </section>
+
+                    <section class="sidebar-panel projection-panel">
+                        <div class="sidebar-panel-heading"><h2>Proyeksi Pembaca</h2><i class="fas fa-chart-line"></i></div>
+                        <p>Berdasarkan topik <strong id="projectionTopic">#{{ old('category', $article->category ?? 'Pengalaman') }}</strong> dan musim rekrutmen semester ganjil, artikel ini berpeluang menjangkau 850–1.400 mahasiswa dalam 7 hari pertama publikasi.</p>
+                        <span class="projection-trend"><i class="fas fa-arrow-trend-up"></i> TREN PENCARIAN NAIK 34%</span>
+                    </section>
+                </aside>
             </div>
         </form>
     </div>
+
+    <dialog id="communityGuidelines" class="guideline-dialog">
+        <div class="guideline-dialog-content">
+            <button type="button" class="close-preview" onclick="document.getElementById('communityGuidelines').close()"><i class="fas fa-times"></i></button>
+            <span class="write-kicker">Prinsip komunitas</span>
+            <h2>Bagikan proses, bukan pencitraan.</h2>
+            <p>Ceritakan pengalaman dengan jujur, lindungi data pribadi, dan pastikan insight-mu bisa membantu mahasiswa lain.</p>
+            <button type="button" class="btn-publish-primary" onclick="document.getElementById('communityGuidelines').close()">Mengerti</button>
+        </div>
+    </dialog>
 
     <!-- Preview Modal -->
     <div id="previewModal" class="preview-modal">
@@ -369,6 +345,185 @@
             .title-input { font-size: 28px; }
             .cover-upload { height: 240px; }
         }
+
+        .write-container {
+            max-width: 1080px;
+            padding: 34px 5% 110px;
+        }
+
+        .write-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            margin: 0 -5% 46px;
+            padding: 15px 5%;
+            background: rgba(255, 250, 246, .94);
+            backdrop-filter: blur(12px);
+        }
+
+        .back-btn {
+            padding: 9px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--white);
+            font-weight: 700;
+        }
+
+        .write-actions { align-items: center; }
+        .btn-draft, .btn-publish, .btn-publish-primary { border-radius: 999px; }
+        .btn-publish-primary { box-shadow: 0 8px 18px rgba(251, 77, 0, .18); }
+
+        .write-content { gap: 38px; }
+        .title-input {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: clamp(32px, 5vw, 56px);
+            letter-spacing: -1.6px;
+            line-height: 1.08;
+        }
+
+        .excerpt-input { font-size: 18px; line-height: 1.6; }
+        .cover-upload { height: 290px; border-radius: 22px; background: rgba(255, 255, 255, .5); }
+        .category-label { border-radius: 999px; }
+        .editor-toolbar { border-radius: 16px 16px 0 0; }
+        .content-editor { min-height: 440px; border-radius: 0 0 16px 16px; }
+        .preview-content { border-radius: 24px; }
+
+        @media (max-width: 768px) {
+            .write-header { margin: 0 -4% 34px; padding: 12px 4%; }
+            .write-actions { flex-wrap: wrap; gap: 8px; }
+            .write-actions button { flex: 1; min-width: 110px; padding-left: 12px; padding-right: 12px; }
+        }
+
+        .write-container {
+            width: min(1180px, 100%);
+            max-width: none;
+            padding: 12px 4% 90px;
+            background: #f9f7f4;
+        }
+
+        .write-header {
+            display: grid;
+            grid-template-columns: auto auto 1fr;
+            align-items: center;
+            gap: 22px;
+            margin: 0 0 18px;
+            padding: 0 4px 10px;
+            border: 0;
+            background: transparent;
+        }
+
+        .write-brand { display: inline-flex; align-items: center; gap: 8px; color: #241b19; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; }
+        .write-mark { display: grid; width: 18px; height: 18px; place-items: center; border-radius: 5px; background: #241b19; color: #fff; font-size: 10px; }
+        .back-btn { order: 3; justify-self: end; padding: 0; border: 0; background: transparent; color: #241b19; }
+        .back-btn:hover { background: transparent; color: var(--tangelo); }
+        .write-actions { grid-column: 1 / -1; grid-row: 2; justify-content: flex-end; gap: 8px; }
+        .save-status { margin-right: auto; color: #72645e; font-size: 11px; }
+        .save-status i { color: #45a77b; }
+        .btn-publish, .btn-publish-primary { padding: 8px 14px; font-size: 11px; }
+        .btn-publish { background: #fff; }
+        .btn-publish-primary { background: #9e2b10; box-shadow: none; }
+
+        .community-banner {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 13px;
+            margin-bottom: 16px;
+            padding: 16px 20px;
+            border-radius: 22px;
+            background: #06232c;
+            color: #fff;
+            box-shadow: 0 10px 18px rgba(6, 35, 44, .12);
+        }
+
+        .community-icon { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; background: #b93b16; font-size: 14px; }
+        .community-title { font-size: 10px; font-weight: 800; letter-spacing: .2px; text-transform: uppercase; }
+        .community-title span { color: #a6c0c1; font-weight: 500; text-transform: none; }
+        .community-banner p { max-width: 680px; margin: 4px 0 0; color: #f1f6f5; font-size: 11px; line-height: 1.5; }
+        .community-link { padding: 8px 12px; border: 1px solid #2e5960; border-radius: 999px; background: #103942; color: #fff; font: 700 10px 'DM Sans', sans-serif; cursor: pointer; }
+        .community-link:hover { background: #1c4e58; }
+
+        .write-layout { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(260px, .92fr); gap: 16px; align-items: start; }
+        .write-main { min-width: 0; padding: 22px 24px 18px; border-radius: 22px; background: #fff; box-shadow: 0 2px 8px rgba(73, 38, 29, .035); }
+        .write-sidebar { display: grid; gap: 14px; }
+        .editor-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: 16px; color: #7d6e67; font-size: 10px; }
+        .editor-meta-row > span, .select-meta { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 999px; background: #f7eee9; color: #8a2d15; font-size: 10px; font-weight: 800; }
+        .editor-meta-row > span { color: #665953; background: #f5f3f1; font-weight: 600; }
+        .title-input { margin: 0; padding: 0 0 10px; border: 0; color: #283137; font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(28px, 4vw, 45px); letter-spacing: -1.8px; line-height: 1.08; }
+        .title-input::placeholder { color: #d6c1ba; }
+        .title-input:focus { border-bottom: 0; }
+        .excerpt-input { margin-top: 7px; padding: 8px 0 14px; border-bottom: 1px solid #eee6e1; color: #5f514b; font-size: 14px; }
+        .topic-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 13px 0 15px; border-bottom: 1px solid #eee6e1; }
+        .topic-field .form-label { font-size: 9px; letter-spacing: .4px; }
+        .category-select { gap: 5px; }
+        .category-label { padding: 5px 8px; border-color: #ece4df; color: #654f48; font-size: 10px; }
+        .category-option input:checked + .category-label { background: #fff0e9; border-color: #f0b39f; color: #9e2b10; }
+        .editor-group { gap: 0; margin-top: 16px; }
+        .editor-toolbar { gap: 1px; padding: 6px 8px; border-color: #e8dfda; border-radius: 999px; box-shadow: 0 4px 12px rgba(73, 38, 29, .08); }
+        .toolbar-btn { width: 28px; height: 28px; color: #4d403b; font-size: 10px; }
+        .toolbar-btn:hover { background: #fff0e9; color: #9e2b10; }
+        .toolbar-extra { width: auto; padding: 0 8px; gap: 5px; }
+        .toolbar-divider { height: 18px; margin: 0 4px; background: #e3d8d2; }
+        .content-editor { min-height: 360px; padding: 20px 0; border: 0; border-radius: 0; background: #fff; color: #29353b; font-size: 14px; line-height: 1.75; }
+        .content-editor:focus { border: 0; }
+        .content-editor:empty::before { content: attr(data-placeholder); color: #c8b7b0; font-style: normal; }
+        .content-editor h2 { color: #29353b; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 19px; }
+        .content-editor blockquote { margin: 20px 0; border-left-color: #bb421f; background: #f7f1ed; }
+        .editor-footer { display: flex; justify-content: space-between; gap: 12px; padding-top: 12px; border-top: 1px solid #eee6e1; color: #8c7c74; font-size: 9px; }
+        .editor-footer i { color: #b33a1a; }
+        .sidebar-panel { padding: 17px; border-radius: 20px; background: #fff; box-shadow: 0 2px 8px rgba(73, 38, 29, .035); }
+        .sidebar-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+        .sidebar-panel-heading h2 { margin: 0; color: #352723; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; }
+        .sidebar-panel-heading > span { color: #b33a1a; font-size: 8px; font-weight: 800; }
+        .sidebar-panel-heading > i { color: #b33a1a; font-size: 13px; }
+        .cover-upload { height: 142px; border: 0; border-radius: 11px; background: #ead8c9; }
+        .cover-upload:hover { background: #f4e6dd; }
+        .upload-placeholder { gap: 6px; text-align: center; }
+        .upload-placeholder i { font-size: 24px; color: #9e7159; }
+        .upload-placeholder p { margin: 0; color: #5b4338; font-size: 12px; }
+        .upload-hint { font-size: 9px; }
+        .sidebar-help { margin: 10px 0 0; color: #7c6a62; font-size: 10px; line-height: 1.45; }
+        .privacy-option { display: flex; gap: 8px; padding: 10px; border-radius: 8px; background: #f8f5f2; cursor: pointer; }
+        .privacy-option + .privacy-option { margin-top: 7px; }
+        .privacy-option input { accent-color: #b33a1a; margin-top: 2px; }
+        .privacy-option strong { display: block; color: #4a3730; font-size: 10px; }
+        .privacy-option small { display: block; margin-top: 3px; color: #806e66; font-size: 9px; line-height: 1.35; }
+        .projection-panel { background: #cbe9f8; }
+        .projection-panel p { margin: 0; color: #385966; font-size: 10px; line-height: 1.5; }
+        .projection-trend { display: block; margin-top: 11px; color: #b33a1a; font-size: 9px; font-weight: 800; }
+        .guideline-dialog { width: min(420px, calc(100% - 32px)); border: 0; border-radius: 20px; padding: 0; box-shadow: 0 24px 70px rgba(36, 27, 25, .25); }
+        .guideline-dialog::backdrop { background: rgba(6, 35, 44, .56); }
+        .guideline-dialog-content { position: relative; padding: 28px; }
+        .guideline-dialog-content .close-preview { position: absolute; top: 16px; right: 16px; }
+        .write-kicker { color: #b33a1a; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        .guideline-dialog h2 { margin: 10px 0; color: #352723; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 23px; }
+        .guideline-dialog p { margin: 0 0 20px; color: #806e66; font-size: 14px; line-height: 1.6; }
+
+        @media (max-width: 800px) {
+            .write-header { grid-template-columns: auto 1fr; }
+            .back-btn { order: 0; justify-self: end; }
+            .write-actions { grid-column: 1 / -1; }
+            .community-banner { grid-template-columns: auto 1fr; }
+            .community-link { grid-column: 2; justify-self: start; }
+            .write-layout { grid-template-columns: 1fr; }
+            .write-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .projection-panel { grid-column: 1 / -1; }
+        }
+
+        @media (max-width: 560px) {
+            .write-container { padding: 10px 3% 60px; }
+            .write-header { gap: 10px; }
+            .save-status { display: none; }
+            .write-actions { justify-content: stretch; }
+            .write-actions .btn-publish, .write-actions .btn-publish-primary { flex: 1; min-width: 0; }
+            .community-banner { padding: 14px; }
+            .community-banner p { font-size: 10px; }
+            .write-main { padding: 18px 15px; }
+            .write-sidebar { grid-template-columns: 1fr; }
+            .projection-panel { grid-column: auto; }
+            .toolbar-extra { display: none; }
+            .editor-footer { flex-direction: column; }
+        }
     </style>
 
     <script>
@@ -381,7 +536,8 @@
             // Update word count
             const text = editor.innerText || '';
             const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
-            document.getElementById('wordCount').textContent = wordCount + ' kata';
+            document.getElementById('wordCountTop').textContent = wordCount;
+            document.getElementById('readingTime').textContent = Math.max(1, Math.ceil(wordCount / 200));
         }
 
         // 2. Fungsi Formatting
@@ -412,7 +568,10 @@
         // 5. Submit Form (PENTING: sync dulu baru submit)
         function submitForm(publish = true) {
             syncContent(); // Pastikan data terbaru masuk ke textarea
-            document.getElementById('publishInput').value = publish ? '1' : '0';
+            const publishOption = document.querySelector(`input[name="publish"][value="${publish ? '1' : '0'}"]`);
+            if (publishOption) {
+                publishOption.checked = true;
+            }
             document.getElementById('articleForm').submit();
         }
 

@@ -17,15 +17,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Articles
+    Route::get('/explore', [ArticleController::class, 'explore'])->name('explore');
+    Route::get('/my-articles', [ArticleController::class, 'manage'])->name('articles.manage');
+    Route::get('/saved-articles', [ArticleController::class, 'saved'])->name('articles.saved');
     Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
     Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
     Route::get('/articles/{slug}', [ArticleController::class, 'show'])->name('articles.show');
     Route::get('/articles/{article}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
     Route::put('/articles/{article}', [ArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy');
 
     // Interactions
     Route::post('/articles/{article}/like', [InteractionController::class, 'like'])->name('articles.like');
     Route::post('/articles/{article}/bookmark', [InteractionController::class, 'bookmark'])->name('articles.bookmark');
+    Route::post('/articles/{article}/comments', [InteractionController::class, 'comment'])->name('articles.comments.store');
     Route::post('/users/{user}/follow', [InteractionController::class, 'follow'])->name('users.follow');
 
     // Profile

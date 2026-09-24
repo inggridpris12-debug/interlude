@@ -52,8 +52,8 @@
     </script>
 
     <style>
-        html { scroll-behavior: smooth; }
-        body { margin: 0; overscroll-behavior: none; }
+        html { scroll-behavior: smooth; overflow-x: clip; }
+        body { margin: 0; overscroll-behavior: none; overflow-x: clip; }
         ::-webkit-scrollbar { display: none; }
 
         .material-symbols-outlined {
@@ -85,6 +85,23 @@
                 animation-iteration-count: 1 !important;
                 transition-duration: .001ms !important;
             }
+        }
+
+        @media (max-width: 640px) {
+            header > div { height: 64px; padding-left: 16px; padding-right: 16px; }
+            header .font-headline.text-2xl { font-size: 21px; }
+            #beranda { padding-top: 64px; }
+            #beranda > section:first-child { padding-top: 26px; padding-bottom: 48px; }
+            #beranda > section:first-child > div { padding-left: 16px; padding-right: 16px; }
+            #beranda h1 { font-size: 36px; line-height: 1.08; letter-spacing: -1px; }
+            #beranda h1 .whitespace-nowrap { white-space: normal; }
+            #beranda h1 + p { margin-top: 20px; font-size: 16px; }
+            #beranda > section:first-child .flex-wrap.items-center { gap: 10px; }
+            #beranda > section:first-child .flex-wrap.items-center a { width: 100%; padding: 13px 18px; }
+            #beranda > section:first-child .grid { gap: 28px; }
+            #mobileMenu nav { padding: 14px 16px 18px; }
+            #mobileMenu .grid-cols-2 { gap: 8px; }
+            #mobileMenu .grid-cols-2 a { padding-left: 10px; padding-right: 10px; font-size: 13px; }
         }
     </style>
 </head>

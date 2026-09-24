@@ -18,28 +18,32 @@
             <div class="header-top">
                 <div class="header-content">
                     <div class="header-left">
+                        <span class="dashboard-kicker"><i class="fas fa-sparkles"></i> Ruang bacamu hari ini</span>
                         <h1 class="greeting">Selamat datang, {{ explode(' ', Auth::user()->name)[0] }}.</h1>
                         <p class="subheading">Temukan cerita dan pengetahuan dari mahasiswa lain.</p>
                     </div>
+                    <a href="{{ route('articles.create') }}" class="write-cta"><i class="fas fa-pen-nib"></i> Tulis pengalaman</a>
                 </div>
             </div>
 
-            <!-- Search Bar dengan Button -->
             <div class="search-section">
-                <div class="search-wrapper">
-                    <input type="text" placeholder="Cari artikel, topik, atau penulis..." class="search-input">
-                    <button class="search-btn">
+                <form method="GET" action="{{ route('explore') }}" class="search-wrapper">
+                    <label for="dashboard-search" class="sr-only">Cari artikel, topik, atau penulis</label>
+                    <i class="fas fa-search search-leading-icon"></i>
+                    <input id="dashboard-search" name="q" type="search" placeholder="Cari artikel, topik, atau penulis..." class="search-input">
+                    <button type="submit" class="search-btn">
                         <i class="fas fa-search"></i>
                         <span>Cari</span>
                     </button>
-                </div>
+                </form>
+                <p class="search-hint"><i class="fas fa-lightbulb"></i> Coba cari “magang pertama”, “skripsi”, atau nama penulis.</p>
             </div>
 
             <!-- Topic Chips -->
             <div class="topics-section">
                 <div class="topics-scroll">
                     @foreach($categories as $category)
-                        <a href="#" class="topic-chip">{{ $category }}</a>
+                        <a href="{{ route('explore', ['category' => $category]) }}" class="topic-chip">{{ $category }} <i class="fas fa-arrow-up-right-from-square"></i></a>
                     @endforeach
                 </div>
             </div>
@@ -50,6 +54,14 @@
             
             <!-- FEED COLUMN -->
             <div class="feed-column">
+
+                <div class="feed-heading">
+                    <div>
+                        <span class="section-kicker">Dikurasi untukmu</span>
+                        <h2>Cerita yang mungkin sedang kamu cari</h2>
+                    </div>
+                    <a href="{{ route('explore') }}">Lihat semua <i class="fas fa-arrow-right"></i></a>
+                </div>
                 
                 <!-- Featured Article -->
                 @if($featuredArticle)
@@ -109,7 +121,7 @@
                                                 <div class="card-stats">
                                                     <span class="stat-item"><i class="far fa-heart"></i> {{ $article->likes_count }}</span>
                                                     <span class="stat-item"><i class="far fa-comment"></i> {{ $article->comments_count }}</span>
-                                                    <span class="stat-item"><i class="fas fa-share"></i> {{ rand(1, 2) }}K</span>
+                                                    <span class="stat-item"><i class="far fa-eye"></i> {{ $article->views_count }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -131,7 +143,7 @@
                                         <div class="card-stats">
                                             <span class="stat-item"><i class="far fa-heart"></i> {{ $article->likes_count }}</span>
                                             <span class="stat-item"><i class="far fa-comment"></i> {{ $article->comments_count }}</span>
-                                            <span class="stat-item"><i class="fas fa-share"></i> {{ rand(1, 2) }}K</span>
+                                            <span class="stat-item"><i class="far fa-eye"></i> {{ $article->views_count }}</span>
                                         </div>
                                     </div>
                                 @endif
@@ -266,7 +278,7 @@
             margin-bottom: 32px;
         }
 
-        .search-wrapper {
+        .dashboard-wrapper .search-wrapper {
             display: flex;
             gap: 12px;
             max-width: 700px;
@@ -831,14 +843,89 @@
             .dashboard-wrapper { padding: 24px 5% 60px; }
             .greeting { font-size: clamp(32px, 8vw, 48px); }
             .header-content { flex-direction: column; }
-            .search-wrapper { flex-direction: column; }
-            .search-btn { justify-content: center; }
+            .dashboard-wrapper .search-wrapper { flex-direction: column; max-width: none; }
+            .dashboard-wrapper .search-btn { justify-content: center; }
             .featured-image-wrapper { height: 360px; }
             .featured-title { font-size: 28px; }
             .card-image-wrapper { height: 240px; }
             .card-content-no-cover .card-title { font-size: 20px; }
             .card-title-overlay { font-size: 20px; }
             .sidebar-column { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 560px) {
+            .dashboard-wrapper { padding: 20px 4% 52px; }
+            .dashboard-header { margin-bottom: 32px; }
+            .greeting { font-size: clamp(32px, 10vw, 42px); letter-spacing: -1px; }
+            .subheading { font-size: 15px; }
+            .search-section { margin-bottom: 22px; }
+            .search-input, .search-btn { height: 48px; }
+            .topics-section { margin-bottom: 30px; }
+            .topic-chip { padding: 10px 15px; font-size: 13px; }
+            .featured-card { margin-bottom: 28px; }
+            .featured-image-wrapper { height: 330px; }
+            .featured-overlay { padding: 68px 18px 18px; }
+            .featured-tag-row { gap: 7px; margin-bottom: 14px; }
+            .featured-badge, .featured-category { padding: 6px 9px; font-size: 10px; }
+            .featured-title { margin-bottom: 20px; font-size: 23px; }
+            .featured-footer { align-items: flex-end; gap: 10px; }
+            .featured-author { gap: 8px; }
+            .featured-author .author-name { font-size: 13px; }
+            .read-more { padding: 9px 12px; font-size: 12px; }
+            .articles-list { gap: 16px; }
+            .card-image-wrapper { height: 210px; }
+            .card-overlay { padding: 60px 18px 18px; }
+            .card-content-no-cover { padding: 20px; }
+            .card-content-no-cover .card-title { font-size: 19px; }
+            .card-stats { gap: 12px; font-size: 12px; }
+            .sidebar-card { padding: 18px; }
+        }
+
+        .dashboard-kicker,
+        .section-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--tangelo);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .header-content { align-items: end; }
+        .dashboard-kicker i { font-size: 9px; }
+        .write-cta { display: inline-flex; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 999px; background: var(--brown); color: var(--white); font-size: 13px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+        .write-cta:hover { background: var(--tangelo); }
+        .dashboard-wrapper .search-wrapper { position: relative; align-items: center; max-width: 760px; padding: 6px 7px 6px 18px; border: 1px solid var(--border); border-radius: 999px; background: var(--white); box-shadow: 0 8px 18px rgba(73, 38, 29, .05); }
+        .dashboard-wrapper .search-input { height: 48px; padding: 0 8px; border: 0; box-shadow: none; }
+        .dashboard-wrapper .search-input:focus { box-shadow: none; }
+        .search-leading-icon { color: var(--tangelo); font-size: 15px; }
+        .dashboard-wrapper .search-btn { height: 46px; padding: 0 20px; }
+        .search-hint { display: flex; align-items: center; gap: 6px; max-width: 760px; margin: 9px 0 0 18px; color: var(--text-soft); font-size: 11px; }
+        .search-hint i { color: var(--tangelo); }
+        .topic-chip { display: inline-flex; align-items: center; gap: 7px; }
+        .topic-chip i { font-size: 9px; opacity: .55; }
+        .feed-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 0 0 18px; }
+        .feed-heading h2 { margin: 7px 0 0; color: var(--brown); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 23px; letter-spacing: -.6px; line-height: 1.2; }
+        .feed-heading > a { display: inline-flex; align-items: center; gap: 6px; color: var(--brown); font-size: 12px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+        .feed-heading > a:hover { color: var(--tangelo); }
+
+        @media (max-width: 768px) {
+            .header-content { align-items: flex-start; }
+            .write-cta { align-self: stretch; justify-content: center; }
+            .dashboard-wrapper .search-wrapper { align-items: stretch; padding-left: 14px; }
+            .dashboard-wrapper .search-input,
+            .dashboard-wrapper .search-btn { width: 100%; }
+            .dashboard-wrapper .search-leading-icon { display: none; }
+            .search-hint { margin-left: 4px; }
+            .feed-heading { align-items: flex-start; flex-direction: column; gap: 8px; }
+        }
+
+        @media (max-width: 560px) {
+            .dashboard-kicker { font-size: 9px; }
+            .write-cta { width: 100%; }
+            .feed-heading h2 { font-size: 20px; }
         }
     </style>
 

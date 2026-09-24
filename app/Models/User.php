@@ -17,6 +17,12 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -52,13 +58,13 @@ class User extends Authenticatable
     public function followers()
     {
         return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     public function following()
     {
         return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     public function comments()
@@ -69,7 +75,10 @@ class User extends Authenticatable
     // Helper: Cek apakah user ini mengikuti user lain
     public function isFollowing($user)
     {
-        if (!$user) return false;
+        if (! $user) {
+            return false;
+        }
+
         return $this->following()->where('following_id', $user->id)->exists();
     }
 
