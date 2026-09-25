@@ -73,13 +73,25 @@ class Article extends Model
         return $this->hasMany(Comment::class);
     }
 
+    public function viewRecords()
+    {
+        return $this->hasMany(ArticleView::class);
+    }
+
+    public function downloadRecords()
+    {
+        return $this->hasMany(ArticleDownload::class);
+    }
+
     public function isLikedBy($user)
     {
         if (! $user) {
             return false;
         }
 
-        return $this->likes()->where('user_id', $user->id)->exists();
+        return $this->likes()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function isBookmarkedBy($user)
@@ -88,7 +100,9 @@ class Article extends Model
             return false;
         }
 
-        return $this->bookmarks()->where('user_id', $user->id)->exists();
+        return $this->bookmarks()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function getLikesCountAttribute()

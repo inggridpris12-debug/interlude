@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -23,11 +22,6 @@ class User extends Authenticatable
         'password',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -35,10 +29,6 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
-    // ==========================================
-    // RELATIONSHIPS & HELPER METHODS (DITAMBAHKAN)
-    // ==========================================
 
     public function articles()
     {
@@ -57,14 +47,22 @@ class User extends Authenticatable
 
     public function followers()
     {
-        return $this->belongsToMany(User::class, 'follows', 'following_id', 'follower_id')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            User::class,
+            'follows',
+            'following_id',
+            'follower_id'
+        )->withTimestamps();
     }
 
     public function following()
     {
-        return $this->belongsToMany(User::class, 'follows', 'follower_id', 'following_id')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            User::class,
+            'follows',
+            'follower_id',
+            'following_id'
+        )->withTimestamps();
     }
 
     public function comments()
@@ -72,23 +70,34 @@ class User extends Authenticatable
         return $this->hasMany(Comment::class);
     }
 
-    // Helper: Cek apakah user ini mengikuti user lain
+    // Riwayat baca user.
+    public function articleViews()
+    {
+        return $this->hasMany(ArticleView::class);
+    }
+
+    // Riwayat unduhan user.
+    public function articleDownloads()
+    {
+        return $this->hasMany(ArticleDownload::class);
+    }
+
     public function isFollowing($user)
     {
         if (! $user) {
             return false;
         }
 
-        return $this->following()->where('following_id', $user->id)->exists();
+        return $this->following()
+            ->where('following_id', $user->id)
+            ->exists();
     }
 
-    // Accessor: Menghitung jumlah followers
     public function getFollowersCountAttribute()
     {
         return $this->followers()->count();
     }
 
-    // Accessor: Menghitung jumlah following
     public function getFollowingCountAttribute()
     {
         return $this->following()->count();
