@@ -42,9 +42,23 @@ class Thread extends Model
             ->whereNull('parent_id')
             ->with([
                 'user',
+                'attachments',
                 'childrenRecursive',
             ])
             ->oldest();
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(
+            Attachment::class,
+            'attachable'
+        )->orderBy('position');
+    }
+
+    public function poll()
+    {
+        return $this->hasOne(ThreadPoll::class);
     }
 
     public function isLikedBy($user): bool

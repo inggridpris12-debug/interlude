@@ -16,9 +16,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    // Utas
+    // Threads / Utas
     Route::post('/threads', [ThreadController::class, 'store'])
         ->name('threads.store');
+
+    Route::get('/threads/{thread}', [ThreadController::class, 'show'])
+        ->name('threads.show');
 
     Route::post('/threads/{thread}/like', [ThreadController::class, 'like'])
         ->name('threads.like');
@@ -28,6 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/threads/{thread}/replies', [ThreadController::class, 'reply'])
         ->name('threads.replies.store');
+
+    Route::post('/threads/{thread}/polls/{poll}/vote', [ThreadController::class, 'vote'])
+        ->name('threads.poll.vote');
 
     Route::delete('/threads/{thread}', [ThreadController::class, 'destroy'])
         ->name('threads.destroy');

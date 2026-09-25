@@ -100,6 +100,11 @@ class User extends Authenticatable
         return $this->hasMany(ThreadReply::class);
     }
 
+    public function pollVotes()
+    {
+        return $this->hasMany(ThreadPollVote::class);
+    }
+
     public function isFollowing($user)
     {
         if (! $user) {

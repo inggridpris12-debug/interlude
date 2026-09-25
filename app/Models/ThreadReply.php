@@ -50,8 +50,17 @@ class ThreadReply extends Model
         )
             ->with([
                 'user',
+                'attachments',
                 'childrenRecursive',
             ])
             ->oldest();
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(
+            Attachment::class,
+            'attachable'
+        )->orderBy('position');
     }
 }

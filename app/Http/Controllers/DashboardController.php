@@ -78,19 +78,16 @@ class DashboardController extends Controller
         ));
     }
 
-    private function buildFeed(
-        string $feed,
+    private function visibleThreads(
         int $userId,
         Collection $followingIds
-    ): Collection {
-        if ($feed === 'podcast') {
-            return collect();
-        }
-
-        $visibleThreads = Thread::query()
+    ) {
+        return Thread::query()
             ->with([
                 'user',
-                'topLevelReplies',
+                'attachments',
+                'poll.options.votes',
+                'poll.votes',
             ])
             ->withCount([
                 'likes',
@@ -109,6 +106,21 @@ class DashboardController extends Controller
                     });
                 }
             });
+    }
+
+    private function buildFeed(
+        string $feed,
+        int $userId,
+        Collection $followingIds
+    ): Collection {
+        if ($feed === 'podcast') {
+            return collect();
+        }
+
+        $threads = $this->visibleThreads(
+            $userId,
+            $followingIds
+        );
 
         $articles = Article::query()
             ->with('user')
@@ -120,7 +132,7 @@ class DashboardController extends Controller
                 return collect();
             }
 
-            $threadItems = (clone $visibleThreads)
+            $threadItems = (clone $threads)
                 ->whereIn('user_id', $followingIds)
                 ->latest()
                 ->take(20)
@@ -140,7 +152,7 @@ class DashboardController extends Controller
         }
 
         if ($feed === 'utas') {
-            return (clone $visibleThreads)
+            return (clone $threads)
                 ->latest()
                 ->take(20)
                 ->get()
@@ -157,7 +169,6 @@ class DashboardController extends Controller
                 ->values();
         }
 
-        // Feed "Untukmu"
         $categoryWeights = collect();
 
         if (
@@ -191,7 +202,7 @@ class DashboardController extends Controller
             );
         }
 
-        $threadItems = (clone $visibleThreads)
+        $threadItems = (clone $threads)
             ->latest()
             ->take(30)
             ->get()
