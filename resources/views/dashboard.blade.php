@@ -1,4 +1,12 @@
 @php
+    $feedTabs = [
+        'untukmu' => 'Untukmu',
+        'mengikuti' => 'Mengikuti',
+        'utas' => 'Utas',
+        'artikel' => 'Artikel',
+        'podcast' => 'Podcast',
+    ];
+
     $gradients = [
         'Penelitian' => 'linear-gradient(135deg, #CAE7F7 0%, #EAF7FD 100%)',
         'Tugas Kuliah' => 'linear-gradient(135deg, #FFEDE3 0%, #FFD9C8 100%)',
@@ -8,1492 +16,1976 @@
         'Kehidupan Kampus' => 'linear-gradient(135deg, #FFE9F1 0%, #FFD1E0 100%)',
     ];
 
-    $getGradient = fn($cat) => $gradients[$cat] ?? 'linear-gradient(135deg, #CAE7F7 0%, #FFEDE3 100%)';
+    $getGradient = fn ($category) => $gradients[$category]
+        ?? 'linear-gradient(135deg, #CAE7F7 0%, #FFEDE3 100%)';
 @endphp
 
 <x-app-layout>
+
     @once
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+        <link
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
+            rel="stylesheet"
+        >
     @endonce
 
-    <div class="interlude-dashboard">
-        <div class="dashboard-shell">
+    <main class="home-feed-page">
 
-            {{-- =========================================================
-                 TOP / GREETING
-            ========================================================== --}}
-            <section class="dashboard-hero">
-                <div class="hero-copy">
-                    <span class="eyebrow">
-                        <span class="eyebrow-dot"></span>
-                        Ruang bacamu hari ini
-                    </span>
+        <div class="home-shell">
 
-                    <h1>
-                        Selamat datang,
-                        <span>{{ explode(' ', Auth::user()->name)[0] }}.</span>
-                    </h1>
+            <section class="home-main">
 
-                    <p>
-                        Temukan pengalaman, catatan, dan cerita dari mahasiswa lain yang mungkin sedang kamu butuhkan.
-                    </p>
-                </div>
+                <nav class="feed-tabs" aria-label="Filter beranda">
+                    @foreach($feedTabs as $key => $label)
+                        <a
+                            href="{{ route('dashboard', ['feed' => $key]) }}"
+                            class="feed-tab {{ $feed === $key ? 'is-active' : '' }}"
+                        >
+                            {{ $label }}
+                        </a>
+                    @endforeach
+                </nav>
 
-                <a href="{{ route('articles.create') }}" class="write-cta">
-                    <i class="fas fa-pen-nib"></i>
-                    <span>Tulis pengalaman</span>
-                </a>
-            </section>
 
-            {{-- =========================================================
-                 SEARCH
-            ========================================================== --}}
-            <section class="search-block">
-                <form method="GET" action="{{ route('explore') }}" class="search-form">
-                    <i class="fas fa-search search-icon"></i>
+                @if(session('success'))
+                    <div class="home-alert home-alert--success">
+                        <i class="fas fa-circle-check"></i>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                @endif
 
-                    <input
-                        id="dashboard-search"
-                        name="q"
-                        type="search"
-                        value="{{ request('q') }}"
-                        placeholder="Cari artikel, topik, atau penulis..."
-                        aria-label="Cari artikel, topik, atau penulis"
-                    >
+                @if($errors->any())
+                    <div class="home-alert home-alert--error">
+                        <i class="fas fa-circle-exclamation"></i>
 
-                    <button type="submit">
-                        <span>Cari</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
-
-                <p class="search-hint">
-                    <i class="far fa-lightbulb"></i>
-                    Coba cari “magang pertama”, “skripsi”, atau nama penulis.
-                </p>
-            </section>
-
-            {{-- =========================================================
-                 CATEGORY FILTER
-            ========================================================== --}}
-            <section class="topic-strip" aria-label="Kategori artikel">
-                <a href="{{ route('explore') }}" class="topic-chip topic-chip--active">Semua</a>
-
-                @foreach($categories as $category)
-                    <a href="{{ route('explore', ['category' => $category]) }}" class="topic-chip">
-                        {{ $category }}
-                    </a>
-                @endforeach
-            </section>
-
-            {{-- =========================================================
-                 FEATURED + SIDEBAR BENTO
-            ========================================================== --}}
-            <section class="dashboard-bento">
-                <div class="main-column">
-                    <div class="section-heading section-heading--compact">
                         <div>
-                            <span class="section-kicker">Dikurasi untukmu</span>
-                            <h2>Cerita yang mungkin sedang kamu cari</h2>
+                            <strong>Belum bisa dikirim.</strong>
+                            <span>{{ $errors->first() }}</span>
+                        </div>
+                    </div>
+                @endif
+
+
+                {{-- =========================================================
+                     TWITTER-LIKE COMPOSER
+                ========================================================== --}}
+                <section class="thread-composer">
+
+                    <div class="composer-row">
+
+                        <div class="composer-avatar">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
 
-                        <a href="{{ route('explore') }}" class="section-link">
-                            Lihat semua
+
+                        <form
+                            method="POST"
+                            action="{{ route('threads.store') }}"
+                            id="threadComposerForm"
+                            class="composer-form"
+                        >
+                            @csrf
+
+                            <textarea
+                                id="threadBody"
+                                name="body"
+                                maxlength="280"
+                                rows="3"
+                                placeholder="Apa yang sedang kamu pikirkan atau pelajari hari ini?"
+                                required
+                            >{{ old('body') }}</textarea>
+
+
+                            <div class="composer-meta">
+
+                                <label>
+                                    <span>Topik</span>
+
+                                    <select name="topic">
+                                        <option value="">Tanpa topik</option>
+
+                                        @foreach($categories as $category)
+                                            <option
+                                                value="{{ $category }}"
+                                                {{ old('topic') === $category ? 'selected' : '' }}
+                                            >
+                                                {{ $category }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </label>
+
+
+                                <label>
+                                    <span>Audiens</span>
+
+                                    <select name="visibility">
+                                        <option
+                                            value="public"
+                                            {{ old('visibility', 'public') === 'public' ? 'selected' : '' }}
+                                        >
+                                            Semua mahasiswa
+                                        </option>
+
+                                        <option
+                                            value="followers"
+                                            {{ old('visibility') === 'followers' ? 'selected' : '' }}
+                                        >
+                                            Hanya pengikut
+                                        </option>
+                                    </select>
+                                </label>
+
+                            </div>
+
+
+                            <div class="composer-footer">
+
+                                <span class="thread-counter">
+                                    <strong id="threadCounter">0</strong>/280
+                                </span>
+
+                                <button
+                                    type="submit"
+                                    class="post-thread-btn"
+                                >
+                                    Posting
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                </section>
+
+
+                <section class="stream">
+
+                    <div class="stream-heading">
+                        <div>
+                            <span class="stream-kicker">
+                                {{ $feedTabs[$feed] ?? 'Untukmu' }}
+                            </span>
+
+                            <h1>
+                                @switch($feed)
+                                    @case('mengikuti')
+                                        Dari orang yang kamu ikuti
+                                        @break
+                                    @case('utas')
+                                        Utas terbaru
+                                        @break
+                                    @case('artikel')
+                                        Artikel terbaru
+                                        @break
+                                    @case('podcast')
+                                        Podcast
+                                        @break
+                                    @default
+                                        Pilihan untukmu
+                                @endswitch
+                            </h1>
+                        </div>
+
+                        <a href="{{ route('explore') }}">
+                            Jelajahi
                             <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
 
-                    @if($featuredArticle)
-                        <a href="{{ route('articles.show', $featuredArticle->slug) }}" class="featured-link">
-                            <article class="featured-card">
-                                <div class="featured-copy">
-                                    <div class="featured-topline">
-                                        <div class="featured-tags">
-                                            <span class="featured-badge">Pilihan untukmu</span>
-                                            <span class="featured-category">{{ $featuredArticle->category }}</span>
-                                        </div>
 
-                                        <span class="featured-bookmark" aria-hidden="true">
-                                            <i class="far fa-bookmark"></i>
-                                        </span>
-                                    </div>
+                    <div class="stream-list">
 
-                                    <div class="featured-main-copy">
-                                        <h3>{{ $featuredArticle->title }}</h3>
+                        @forelse($feedItems as $feedItem)
 
-                                        @if(!empty($featuredArticle->excerpt))
-                                            <p>{{ Str::limit($featuredArticle->excerpt, 150) }}</p>
-                                        @endif
-                                    </div>
+                            @if($feedItem['type'] === 'thread')
 
-                                    <div class="featured-footer">
-                                        <div class="author-row">
-                                            <div class="avatar avatar--featured">
-                                                {{ strtoupper(substr($featuredArticle->user->name, 0, 1)) }}
+                                @php
+                                    $thread = $feedItem['item'];
+                                    $liked = $thread->isLikedBy(Auth::user());
+                                    $bookmarked = $thread->isBookmarkedBy(Auth::user());
+                                @endphp
+
+                                <article class="thread-card">
+
+                                    <div class="thread-card-top">
+
+                                        <div class="thread-author">
+
+                                            <div class="feed-avatar">
+                                                {{ strtoupper(substr($thread->user->name, 0, 1)) }}
                                             </div>
 
                                             <div>
-                                                <strong>{{ $featuredArticle->user->name }}</strong>
-                                                <span>{{ $featuredArticle->reading_time }} menit baca</span>
+                                                <strong>{{ $thread->user->name }}</strong>
+
+                                                <span>
+                                                    {{ $thread->created_at->locale('id')->diffForHumans() }}
+                                                    ·
+                                                    {{ $thread->visibility === 'followers' ? 'Pengikut' : 'Publik' }}
+                                                </span>
                                             </div>
+
                                         </div>
 
-                                        <span class="featured-read">
-                                            Baca sekarang
-                                            <i class="fas fa-arrow-right"></i>
-                                        </span>
-                                    </div>
-                                </div>
 
-                                <div class="featured-visual-wrap">
-                                    <div class="featured-orb featured-orb--one"></div>
-                                    <div class="featured-orb featured-orb--two"></div>
+                                        <div class="thread-top-actions">
 
-                                    <div class="featured-cover-card">
-                                        @if($featuredArticle->cover_image)
-                                            <img
-                                                src="{{ asset('storage/' . $featuredArticle->cover_image) }}"
-                                                alt="{{ $featuredArticle->title }}"
-                                            >
-                                        @else
-                                            <div class="featured-placeholder" style="background: {{ $getGradient($featuredArticle->category) }};">
-                                                <i class="far fa-file-alt"></i>
-                                                <span>{{ $featuredArticle->category }}</span>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </article>
-                        </a>
-                    @else
-                        <div class="featured-empty">
-                            <div class="featured-empty-icon"><i class="far fa-newspaper"></i></div>
-                            <div>
-                                <h3>Belum ada cerita pilihan.</h3>
-                                <p>Cerita terbaru akan muncul di sini setelah ada artikel yang dipublikasikan.</p>
-                            </div>
-                        </div>
-                    @endif
-                </div>
+                                            @if($thread->topic)
+                                                <span class="thread-topic">
+                                                    {{ $thread->topic }}
+                                                </span>
+                                            @endif
 
-                <aside class="side-column">
-                    {{-- Recommended writers --}}
-                    <div class="side-card writers-card">
-                        <div class="side-card-heading">
-                            <div>
-                                <span class="side-kicker">Temukan orang baru</span>
-                                <h3>Penulis untukmu</h3>
-                            </div>
-                            <i class="fas fa-user-friends side-heading-icon"></i>
-                        </div>
+                                            @if($thread->user_id === Auth::id())
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('threads.destroy', $thread) }}"
+                                                    onsubmit="return confirm('Hapus utasan ini?')"
+                                                >
+                                                    @csrf
+                                                    @method('DELETE')
 
-                        <div class="writer-list">
-                            @forelse($recommendedWriters as $writer)
-                                <div class="writer-row">
-                                    <div class="writer-profile">
-                                        <div class="avatar writer-avatar">
-                                            {{ strtoupper(substr($writer->name, 0, 1)) }}
+                                                    <button
+                                                        type="submit"
+                                                        class="thread-more"
+                                                        aria-label="Hapus utasan"
+                                                    >
+                                                        <i class="far fa-trash-can"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+
                                         </div>
 
-                                        <div class="writer-copy">
-                                            <strong>{{ $writer->name }}</strong>
-                                            <span>Mahasiswa Interlude</span>
-                                        </div>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        class="follow-btn"
-                                        onclick="toggleFollow({{ $writer->id }}, this)"
-                                    >
-                                        Ikuti
-                                    </button>
-                                </div>
-                            @empty
-                                <div class="side-empty">Belum ada penulis untuk ditampilkan.</div>
-                            @endforelse
-                        </div>
-                    </div>
 
-                    {{-- Trending --}}
-                    <div class="side-card trending-card">
-                        <div class="side-card-heading">
-                            <div>
-                                <span class="side-kicker">Lagi ramai</span>
-                                <h3>Banyak dibaca</h3>
-                            </div>
-                            <i class="fas fa-chart-line side-heading-icon"></i>
-                        </div>
+                                    <div class="thread-body">
+                                        {{ $thread->body }}
+                                    </div>
 
-                        <div class="trending-list">
-                            @forelse($trendingArticles as $index => $trend)
-                                <a href="{{ route('articles.show', $trend->slug) }}" class="trending-row">
-                                    <span class="trend-number">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</span>
-                                    <span class="trend-title">{{ $trend->title }}</span>
-                                    <i class="fas fa-arrow-up-right-from-square trend-arrow"></i>
-                                </a>
-                            @empty
-                                <div class="side-empty">Belum ada artikel trending.</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </aside>
-            </section>
 
-            {{-- =========================================================
-                 ARTICLE FEED
-            ========================================================== --}}
-            <section class="latest-section">
-                <div class="section-heading">
-                    <div>
-                        <span class="section-kicker">Terbaru di Interlude</span>
-                        <h2>Cerita dari mahasiswa lain</h2>
-                        <p>Catatan pengalaman yang bisa kamu baca, simpan, dan buka lagi kapan pun.</p>
-                    </div>
-                </div>
+                                    <div class="thread-actions">
 
-                <div class="article-grid">
-                    @forelse($articles as $article)
-                        <a href="{{ route('articles.show', $article->slug) }}" class="article-link">
-                            <article class="article-card">
-                                <div class="article-cover">
-                                    @if($article->cover_image)
-                                        <img
-                                            src="{{ asset('storage/' . $article->cover_image) }}"
-                                            alt="{{ $article->title }}"
+                                        <button
+                                            type="button"
+                                            class="thread-action {{ $liked ? 'is-active' : '' }}"
+                                            data-thread-like
+                                            data-url="{{ route('threads.like', $thread) }}"
                                         >
+                                            <i class="{{ $liked ? 'fas' : 'far' }} fa-heart"></i>
+                                            <span data-like-count>{{ $thread->likes_count }}</span>
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="thread-action"
+                                            data-toggle-discussion="{{ $thread->id }}"
+                                        >
+                                            <i class="far fa-comment"></i>
+                                            <span>{{ $thread->replies_count }}</span>
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="thread-action"
+                                            data-share-thread
+                                        >
+                                            <i class="fas fa-arrow-up-from-bracket"></i>
+                                            <span>Bagikan</span>
+                                        </button>
+
+
+                                        <button
+                                            type="button"
+                                            class="thread-action thread-action--push {{ $bookmarked ? 'is-active' : '' }}"
+                                            data-thread-bookmark
+                                            data-url="{{ route('threads.bookmark', $thread) }}"
+                                            aria-label="Simpan utasan"
+                                        >
+                                            <i class="{{ $bookmarked ? 'fas' : 'far' }} fa-bookmark"></i>
+                                        </button>
+
+                                    </div>
+
+
+                                    {{-- =================================================
+                                         COMMENTS + NESTED REPLIES
+                                    ================================================== --}}
+                                    <section
+                                        class="thread-discussion"
+                                        id="threadDiscussion{{ $thread->id }}"
+                                        hidden
+                                    >
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('threads.replies.store', $thread) }}"
+                                            class="thread-comment-form"
+                                        >
+                                            @csrf
+
+                                            <div class="comment-form-avatar">
+                                                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                            </div>
+
+                                            <div>
+                                                <textarea
+                                                    name="body"
+                                                    rows="2"
+                                                    maxlength="280"
+                                                    placeholder="Tulis komentar..."
+                                                    required
+                                                ></textarea>
+
+                                                <div class="comment-form-footer">
+                                                    <span>Maks. 280 karakter</span>
+
+                                                    <button type="submit">
+                                                        Balas
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                        </form>
+
+
+                                        <div class="comments-list">
+
+                                            @forelse($thread->topLevelReplies as $reply)
+
+                                                @include('threads._reply', [
+                                                    'reply' => $reply,
+                                                    'thread' => $thread,
+                                                    'level' => 0,
+                                                ])
+
+                                            @empty
+
+                                                <div class="comment-empty">
+                                                    Belum ada komentar. Mulai percakapan.
+                                                </div>
+
+                                            @endforelse
+
+                                        </div>
+
+                                    </section>
+
+                                </article>
+
+
+                            @elseif($feedItem['type'] === 'article')
+
+                                @php
+                                    $article = $feedItem['item'];
+                                @endphp
+
+                                <a
+                                    href="{{ route('articles.show', $article->slug) }}"
+                                    class="feed-article-link"
+                                >
+
+                                    <article class="feed-article-card">
+
+                                        <div class="feed-article-copy">
+
+                                            <div class="article-byline">
+
+                                                <div class="feed-avatar feed-avatar--small">
+                                                    {{ strtoupper(substr($article->user->name, 0, 1)) }}
+                                                </div>
+
+                                                <div>
+                                                    <strong>{{ $article->user->name }}</strong>
+
+                                                    <span>
+                                                        {{ optional($article->published_at)->locale('id')->diffForHumans() }}
+                                                    </span>
+                                                </div>
+
+                                            </div>
+
+
+                                            <span class="article-type">
+                                                Artikel · {{ $article->category }}
+                                            </span>
+
+
+                                            <h2>{{ $article->title }}</h2>
+
+
+                                            @if($article->excerpt)
+                                                <p>
+                                                    {{ Str::limit($article->excerpt, 170) }}
+                                                </p>
+                                            @endif
+
+
+                                            <div class="feed-article-meta">
+                                                <span>
+                                                    <i class="far fa-clock"></i>
+                                                    {{ $article->reading_time }} menit
+                                                </span>
+
+                                                <span>
+                                                    <i class="far fa-heart"></i>
+                                                    {{ $article->likes_count }}
+                                                </span>
+
+                                                <span>
+                                                    <i class="far fa-comment"></i>
+                                                    {{ $article->comments_count }}
+                                                </span>
+
+                                                <span>
+                                                    <i class="far fa-eye"></i>
+                                                    {{ $article->views_count }}
+                                                </span>
+                                            </div>
+
+                                        </div>
+
+
+                                        <div class="feed-article-cover">
+
+                                            @if($article->cover_image)
+                                                <img
+                                                    src="{{ asset('storage/' . $article->cover_image) }}"
+                                                    alt="{{ $article->title }}"
+                                                >
+                                            @else
+                                                <div
+                                                    class="feed-article-placeholder"
+                                                    style="background: {{ $getGradient($article->category) }};"
+                                                >
+                                                    <i class="far fa-file-lines"></i>
+                                                    <span>{{ $article->category }}</span>
+                                                </div>
+                                            @endif
+
+                                        </div>
+
+                                    </article>
+
+                                </a>
+
+                            @endif
+
+                        @empty
+
+                            <div class="feed-empty">
+
+                                <div class="feed-empty-icon">
+                                    @if($feed === 'podcast')
+                                        <i class="fas fa-headphones"></i>
+                                    @elseif($feed === 'mengikuti')
+                                        <i class="fas fa-user-group"></i>
                                     @else
-                                        <div class="article-placeholder" style="background: {{ $getGradient($article->category) }};">
-                                            <span class="placeholder-category">{{ $article->category }}</span>
-                                            <i class="far fa-file-lines"></i>
-                                        </div>
+                                        <i class="far fa-message"></i>
                                     @endif
-
-                                    <span class="article-category">{{ $article->category }}</span>
                                 </div>
 
-                                <div class="article-body">
-                                    <div class="article-author">
-                                        <div class="avatar article-avatar">
-                                            {{ strtoupper(substr($article->user->name, 0, 1)) }}
-                                        </div>
-
-                                        <div>
-                                            <strong>{{ $article->user->name }}</strong>
-                                            <span>{{ $article->reading_time }} menit baca</span>
-                                        </div>
-                                    </div>
-
-                                    <h3>{{ $article->title }}</h3>
-
-                                    @if(!empty($article->excerpt))
-                                        <p>{{ Str::limit($article->excerpt, 115) }}</p>
+                                <h2>
+                                    @if($feed === 'podcast')
+                                        Feed podcast belum tersedia.
+                                    @elseif($feed === 'mengikuti')
+                                        Belum ada konten dari akun yang kamu ikuti.
+                                    @else
+                                        Belum ada konten di sini.
                                     @endif
+                                </h2>
 
-                                    <div class="article-meta">
-                                        <span><i class="far fa-heart"></i> {{ $article->likes_count }}</span>
-                                        <span><i class="far fa-comment"></i> {{ $article->comments_count }}</span>
-                                        <span><i class="far fa-eye"></i> {{ $article->views_count }}</span>
+                                <p>
+                                    @if($feed === 'podcast')
+                                        Backend podcast belum tersambung ke Beranda.
+                                    @elseif($feed === 'mengikuti')
+                                        Ikuti penulis lain atau mulai dari tab Untukmu.
+                                    @else
+                                        Jadilah yang pertama membagikan utasan.
+                                    @endif
+                                </p>
 
-                                        <span class="article-arrow">
-                                            Baca
-                                            <i class="fas fa-arrow-right"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                            </article>
-                        </a>
-                    @empty
-                        <div class="empty-state">
-                            <div class="empty-icon"><i class="far fa-newspaper"></i></div>
-                            <h3>Belum ada cerita</h3>
-                            <p>Jadilah yang pertama berbagi pengalaman di Interlude.</p>
-                            <a href="{{ route('articles.create') }}" class="empty-cta">
-                                <i class="fas fa-pen"></i>
-                                Tulis Artikel
-                            </a>
-                        </div>
-                    @endforelse
-                </div>
+                            </div>
 
-                @if($articles->hasPages())
-                    <div class="pagination-wrap">
-                        {{ $articles->links() }}
+                        @endforelse
+
                     </div>
-                @endif
+
+                </section>
+
             </section>
 
-            {{-- =========================================================
-                 BOTTOM CTA
-            ========================================================== --}}
-            <section class="contribution-banner">
-                <div class="contribution-icon">
-                    <i class="fas fa-pen-nib"></i>
-                </div>
 
-                <div class="contribution-copy">
-                    <span class="section-kicker">Giliran ceritamu</span>
-                    <h2>Punya sesuatu yang kamu pelajari minggu ini?</h2>
-                    <p>Bagikan prosesnya. Pengalaman kecilmu mungkin sedang dicari mahasiswa lain.</p>
-                </div>
+            <aside class="home-sidebar">
 
-                <a href="{{ route('articles.create') }}" class="contribution-cta">
-                    Mulai menulis
-                    <i class="fas fa-arrow-right"></i>
-                </a>
-            </section>
+                <section class="sidebar-card">
+
+                    <div class="sidebar-heading">
+                        <div>
+                            <span>Temukan orang baru</span>
+                            <h2>Penulis untukmu</h2>
+                        </div>
+
+                        <i class="fas fa-user-group"></i>
+                    </div>
+
+
+                    <div class="writer-list">
+
+                        @forelse($recommendedWriters as $writer)
+
+                            <div class="writer-row">
+
+                                <div class="writer-info">
+
+                                    <div class="writer-avatar">
+                                        {{ strtoupper(substr($writer->name, 0, 1)) }}
+                                    </div>
+
+                                    <div>
+                                        <strong>{{ $writer->name }}</strong>
+                                        <span>{{ $writer->articles_count }} artikel</span>
+                                    </div>
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    class="follow-btn"
+                                    onclick="toggleFollow({{ $writer->id }}, this)"
+                                >
+                                    Ikuti
+                                </button>
+
+                            </div>
+
+                        @empty
+                            <p class="sidebar-empty">
+                                Belum ada rekomendasi penulis.
+                            </p>
+                        @endforelse
+
+                    </div>
+
+                </section>
+
+
+                <section class="sidebar-card">
+
+                    <div class="sidebar-heading">
+                        <div>
+                            <span>Lagi ramai</span>
+                            <h2>Banyak dibaca</h2>
+                        </div>
+
+                        <i class="fas fa-arrow-trend-up"></i>
+                    </div>
+
+
+                    <div class="trending-list">
+
+                        @forelse($trendingArticles as $index => $article)
+
+                            <a
+                                href="{{ route('articles.show', $article->slug) }}"
+                                class="trend-row"
+                            >
+                                <span class="trend-no">
+                                    {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
+                                </span>
+
+                                <div>
+                                    <strong>{{ $article->title }}</strong>
+
+                                    <span>
+                                        {{ number_format($article->views_count) }}
+                                        dibaca
+                                    </span>
+                                </div>
+                            </a>
+
+                        @empty
+                            <p class="sidebar-empty">
+                                Belum ada artikel yang sedang ramai.
+                            </p>
+                        @endforelse
+
+                    </div>
+
+                </section>
+
+            </aside>
+
         </div>
-    </div>
+
+    </main>
+
 
     <style>
         :root {
-            --interlude-brown: #49261D;
-            --interlude-brown-dark: #30120A;
-            --interlude-orange: #FB4D00;
-            --interlude-orange-dark: #D44000;
-            --interlude-blue: #CAE7F7;
-            --interlude-blue-dim: #AECBDa;
-            --interlude-linen: #FFEDE3;
-            --interlude-cream: #FDFAF7;
-            --interlude-white: #FFFFFF;
-            --interlude-text: #1C1B19;
-            --interlude-muted: #6F605B;
-            --interlude-border: #E7DAD4;
-            --interlude-soft: #F6F0EC;
+            --home-brown: #49261D;
+            --home-brown-dark: #30120A;
+            --home-orange: #FB4D00;
+            --home-blue: #CAE7F7;
+            --home-linen: #FFEDE3;
+            --home-cream: #FDFAF7;
+            --home-white: #FFFFFF;
+            --home-text: #1C1B19;
+            --home-muted: #705D55;
+            --home-border: #E8DCD6;
+            --home-soft: #F7F2EE;
         }
 
-        .interlude-dashboard,
-        .interlude-dashboard * {
+        .home-feed-page,
+        .home-feed-page * {
             box-sizing: border-box;
         }
 
-        .interlude-dashboard {
-            width: 100%;
+        .home-feed-page {
             min-height: 100vh;
+            padding: 34px 5% 90px;
             background:
-                radial-gradient(circle at 88% 6%, rgba(202, 231, 247, .42) 0, transparent 27%),
-                linear-gradient(180deg, #FDFAF7 0%, #FFFCF9 100%);
-            color: var(--interlude-text);
+                radial-gradient(
+                    circle at 93% 5%,
+                    rgba(202, 231, 247, .34),
+                    transparent 24%
+                ),
+                linear-gradient(
+                    180deg,
+                    #FDFAF7,
+                    #FFFCF9
+                );
+            color: var(--home-text);
             font-family: 'DM Sans', sans-serif;
         }
 
-        .dashboard-shell {
-            width: min(1280px, calc(100% - 40px));
+        .home-shell {
+            width: min(1280px, 100%);
             margin: 0 auto;
-            padding: 54px 0 80px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 330px;
+            gap: 28px;
+            align-items: start;
         }
 
-        .dashboard-hero {
+        .home-main {
+            min-width: 0;
+        }
+
+        /* TABS */
+        .feed-tabs {
             display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 40px;
-            padding-bottom: 30px;
-        }
-
-        .hero-copy {
-            max-width: 760px;
-        }
-
-        .eyebrow,
-        .section-kicker,
-        .side-kicker {
-            display: inline-flex;
             align-items: center;
             gap: 7px;
-            color: var(--interlude-orange);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 1.15px;
-            text-transform: uppercase;
-        }
-
-        .eyebrow {
-            padding: 7px 11px;
-            border-radius: 999px;
-            background: #FFDCD1;
-            color: #8A2707;
-        }
-
-        .eyebrow-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: var(--interlude-orange);
-            box-shadow: 0 0 0 4px rgba(251, 77, 0, .10);
-        }
-
-        .hero-copy h1 {
-            margin: 18px 0 10px;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: clamp(42px, 5.3vw, 68px);
-            font-weight: 800;
-            letter-spacing: -3px;
-            line-height: 1.02;
-        }
-
-        .hero-copy h1 span {
-            color: var(--interlude-brown);
-        }
-
-        .hero-copy p {
-            max-width: 650px;
-            margin: 0;
-            color: var(--interlude-muted);
-            font-size: 17px;
-            line-height: 1.7;
-        }
-
-        .write-cta,
-        .contribution-cta,
-        .empty-cta {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 9px;
-            border-radius: 999px;
-            text-decoration: none;
-            transition: .2s ease;
-        }
-
-        .write-cta {
-            flex-shrink: 0;
-            padding: 14px 20px;
-            background: var(--interlude-orange);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            box-shadow: 0 12px 28px rgba(251, 77, 0, .18);
-        }
-
-        .write-cta:hover {
-            transform: translateY(-2px);
-            background: var(--interlude-brown);
-            color: white;
-        }
-
-        .search-block {
-            max-width: 820px;
-            margin-bottom: 20px;
-        }
-
-        .search-form {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 7px 8px 7px 20px;
-            border: 1px solid var(--interlude-border);
-            border-radius: 999px;
-            background: white;
-            box-shadow: 0 10px 30px rgba(73, 38, 29, .05);
-        }
-
-        .search-icon {
-            color: var(--interlude-orange);
-            font-size: 15px;
-        }
-
-        .search-form input {
-            width: 100%;
-            min-width: 0;
-            height: 48px;
-            border: 0;
-            outline: 0;
-            background: transparent;
-            color: var(--interlude-text);
-            font-family: inherit;
-            font-size: 15px;
-        }
-
-        .search-form input::placeholder {
-            color: #AE9D95;
-        }
-
-        .search-form button {
-            height: 46px;
-            padding: 0 22px;
-            border: 0;
-            border-radius: 999px;
-            background: var(--interlude-brown);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 12px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: .2s ease;
-            white-space: nowrap;
-        }
-
-        .search-form button:hover {
-            background: var(--interlude-orange);
-        }
-
-        .search-form button i {
-            margin-left: 8px;
-        }
-
-        .search-hint {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin: 9px 0 0 18px;
-            color: #8B7A73;
-            font-size: 11px;
-        }
-
-        .search-hint i {
-            color: var(--interlude-orange);
-        }
-
-        .topic-strip {
-            display: flex;
-            align-items: center;
-            gap: 9px;
+            padding: 6px;
             overflow-x: auto;
-            padding: 2px 0 36px;
+            border: 1px solid var(--home-border);
+            border-radius: 999px;
+            background: rgba(255,255,255,.84);
+            box-shadow: 0 8px 26px rgba(73,38,29,.04);
             scrollbar-width: none;
         }
 
-        .topic-strip::-webkit-scrollbar {
+        .feed-tabs::-webkit-scrollbar {
             display: none;
         }
 
-        .topic-chip {
+        .feed-tab {
             flex: 0 0 auto;
-            padding: 10px 16px;
-            border: 1px solid var(--interlude-border);
+            min-height: 40px;
+            padding: 10px 18px;
+            display: inline-flex;
+            align-items: center;
             border-radius: 999px;
-            background: rgba(255,255,255,.72);
-            color: var(--interlude-brown);
+            color: var(--home-muted);
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 700;
             text-decoration: none;
-            transition: .2s ease;
         }
 
-        .topic-chip:hover,
-        .topic-chip--active {
-            border-color: var(--interlude-brown);
-            background: var(--interlude-brown);
+        .feed-tab:hover {
+            color: var(--home-brown);
+            background: var(--home-linen);
+        }
+
+        .feed-tab.is-active {
+            background: var(--home-brown);
             color: white;
-            transform: translateY(-1px);
+            box-shadow: 0 7px 18px rgba(73,38,29,.14);
         }
 
-        .dashboard-bento {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 335px;
-            gap: 22px;
-            align-items: start;
-        }
-
-        .section-heading {
+        /* ALERT */
+        .home-alert {
+            margin-top: 16px;
+            padding: 13px 15px;
             display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 24px;
-            margin-bottom: 22px;
-        }
-
-        .section-heading--compact {
-            margin-bottom: 16px;
-        }
-
-        .section-heading h2 {
-            margin: 7px 0 0;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -1px;
-            line-height: 1.18;
-        }
-
-        .section-heading p {
-            max-width: 640px;
-            margin: 8px 0 0;
-            color: var(--interlude-muted);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .section-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            color: var(--interlude-brown);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 800;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .section-link:hover {
-            color: var(--interlude-orange);
-        }
-
-        .featured-link,
-        .article-link {
-            display: block;
-            color: inherit;
-            text-decoration: none;
-        }
-
-        .featured-card {
-            position: relative;
-            display: grid;
-            grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr);
-            min-height: 470px;
-            overflow: hidden;
-            border-radius: 34px;
-            background: var(--interlude-blue);
-            box-shadow: 0 18px 50px rgba(73, 38, 29, .08);
-            transition: .28s ease;
-        }
-
-        .featured-link:hover .featured-card {
-            transform: translateY(-3px);
-            box-shadow: 0 26px 65px rgba(73, 38, 29, .12);
-        }
-
-        .featured-copy {
-            position: relative;
-            z-index: 3;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 34px;
-        }
-
-        .featured-topline,
-        .featured-footer,
-        .featured-tags,
-        .author-row,
-        .article-author,
-        .article-meta,
-        .side-card-heading,
-        .writer-row,
-        .writer-profile {
-            display: flex;
-            align-items: center;
-        }
-
-        .featured-topline,
-        .featured-footer,
-        .side-card-heading,
-        .writer-row {
-            justify-content: space-between;
-        }
-
-        .featured-tags {
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .featured-badge,
-        .featured-category,
-        .article-category,
-        .placeholder-category {
-            display: inline-flex;
-            align-items: center;
-            width: fit-content;
-            border-radius: 999px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 9px;
-            font-weight: 800;
-            letter-spacing: .45px;
-            text-transform: uppercase;
-        }
-
-        .featured-badge {
-            padding: 7px 11px;
-            background: var(--interlude-brown);
-            color: white;
-        }
-
-        .featured-category {
-            padding: 7px 11px;
-            background: rgba(255,255,255,.78);
-            color: var(--interlude-brown);
-        }
-
-        .featured-bookmark {
-            display: inline-flex;
-            width: 40px;
-            height: 40px;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: rgba(255,255,255,.82);
-            color: var(--interlude-brown);
-        }
-
-        .featured-main-copy {
-            max-width: 600px;
-            padding: 38px 0 28px;
-        }
-
-        .featured-main-copy h3 {
-            margin: 0;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: clamp(35px, 4vw, 52px);
-            font-weight: 800;
-            letter-spacing: -2.2px;
-            line-height: 1.03;
-        }
-
-        .featured-main-copy p {
-            max-width: 520px;
-            margin: 16px 0 0;
-            color: #5D514D;
-            font-size: 14px;
-            line-height: 1.65;
-        }
-
-        .author-row,
-        .article-author,
-        .writer-profile {
-            gap: 11px;
-        }
-
-        .avatar {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex: 0 0 auto;
-            border-radius: 999px;
-            background: var(--interlude-brown);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 800;
-        }
-
-        .avatar--featured {
-            width: 38px;
-            height: 38px;
-            font-size: 12px;
-        }
-
-        .author-row strong,
-        .article-author strong {
-            display: block;
-            color: var(--interlude-brown);
-            font-size: 12px;
-        }
-
-        .author-row span,
-        .article-author span {
-            display: block;
-            margin-top: 2px;
-            color: var(--interlude-muted);
-            font-size: 10px;
-        }
-
-        .featured-read {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            color: var(--interlude-brown);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 11px;
-            font-weight: 800;
-        }
-
-        .featured-visual-wrap {
-            position: relative;
-            min-height: 100%;
-        }
-
-        .featured-orb {
-            position: absolute;
-            border-radius: 999px;
-            pointer-events: none;
-        }
-
-        .featured-orb--one {
-            width: 310px;
-            height: 310px;
-            top: -70px;
-            right: -100px;
-            background: rgba(255, 222, 211, .85);
-        }
-
-        .featured-orb--two {
-            width: 220px;
-            height: 220px;
-            bottom: -90px;
-            left: -70px;
-            background: rgba(255,255,255,.55);
-        }
-
-        .featured-cover-card {
-            position: absolute;
-            z-index: 2;
-            width: min(88%, 245px);
-            aspect-ratio: .76;
-            right: 28px;
-            bottom: -18px;
-            overflow: hidden;
-            border: 8px solid rgba(255,255,255,.72);
-            border-radius: 26px;
-            background: white;
-            box-shadow: 0 22px 45px rgba(48,18,10,.13);
-            transform: rotate(3deg);
-            transition: .3s ease;
-        }
-
-        .featured-link:hover .featured-cover-card {
-            transform: rotate(0deg) translateY(-4px);
-        }
-
-        .featured-cover-card img,
-        .article-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .featured-placeholder,
-        .article-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            color: var(--interlude-brown);
-            text-align: center;
-        }
-
-        .featured-placeholder i {
-            font-size: 44px;
-            opacity: .38;
-        }
-
-        .featured-placeholder span {
-            max-width: 120px;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .featured-empty {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            min-height: 240px;
-            padding: 36px;
-            border: 1px dashed var(--interlude-border);
-            border-radius: 30px;
-            background: rgba(255,255,255,.65);
-        }
-
-        .featured-empty-icon,
-        .empty-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: var(--interlude-blue);
-            color: var(--interlude-brown);
-        }
-
-        .featured-empty-icon {
-            width: 56px;
-            height: 56px;
-            flex: 0 0 auto;
-        }
-
-        .featured-empty h3 {
-            margin: 0 0 4px;
-            color: var(--interlude-brown);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 18px;
-        }
-
-        .featured-empty p {
-            margin: 0;
-            color: var(--interlude-muted);
+            align-items: flex-start;
+            gap: 10px;
+            border-radius: 16px;
             font-size: 13px;
         }
 
-        .side-column {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            padding-top: 55px;
+        .home-alert--success {
+            background: #E5F4EC;
+            color: #27684F;
         }
 
-        .side-card {
-            padding: 22px;
-            border: 1px solid var(--interlude-border);
-            border-radius: 28px;
-            background: rgba(255,255,255,.90);
-            box-shadow: 0 10px 34px rgba(73,38,29,.04);
+        .home-alert--error {
+            background: #FFF0ED;
+            color: #9A2A17;
         }
 
-        .side-card-heading {
-            gap: 18px;
-            margin-bottom: 18px;
+        .home-alert--error div {
+            display: grid;
+            gap: 2px;
         }
 
-        .side-card-heading h3 {
-            margin: 4px 0 0;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 19px;
-            font-weight: 800;
-            letter-spacing: -.5px;
+        /* COMPOSER */
+        .thread-composer {
+            margin-top: 18px;
+            padding: 20px 22px;
+            border: 1px solid var(--home-border);
+            border-radius: 25px;
+            background: var(--home-white);
+            box-shadow: 0 12px 34px rgba(73,38,29,.055);
         }
 
-        .side-heading-icon {
-            color: #B8D8E9;
-            font-size: 18px;
+        .composer-row {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr);
+            gap: 13px;
         }
 
-        .writer-list {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .writer-row {
-            gap: 10px;
-            padding: 10px 0;
-            border-bottom: 1px solid #F0E7E2;
-        }
-
-        .writer-row:last-child {
-            border-bottom: 0;
-        }
-
+        .composer-avatar,
+        .feed-avatar,
         .writer-avatar,
-        .article-avatar {
-            width: 38px;
-            height: 38px;
-            font-size: 11px;
+        .comment-avatar,
+        .comment-form-avatar {
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            color: var(--home-brown);
+            background: var(--home-blue);
         }
 
-        .writer-copy {
+        .composer-avatar {
+            width: 44px;
+            height: 44px;
+            font-size: 14px;
+        }
+
+        .composer-form {
             min-width: 0;
         }
 
-        .writer-copy strong {
-            display: block;
-            overflow: hidden;
-            color: var(--interlude-brown);
+        .composer-form > textarea {
+            width: 100%;
+            min-height: 90px;
+            resize: vertical;
+            padding: 8px 4px 14px;
+            border: 0;
+            outline: 0;
+            background: transparent;
+            color: var(--home-text);
+            font: 500 17px/1.55 'DM Sans', sans-serif;
+        }
+
+        .composer-form > textarea::placeholder {
+            color: #9D8981;
+        }
+
+        .composer-meta {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap;
+            padding: 12px 0;
+            border-top: 1px solid var(--home-border);
+        }
+
+        .composer-meta label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .composer-meta label > span {
+            color: #9A8780;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .composer-meta select {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--home-border);
+            border-radius: 999px;
+            outline: 0;
+            background: var(--home-soft);
+            color: var(--home-brown);
+            font: 700 10px 'DM Sans', sans-serif;
+        }
+
+        .composer-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 2px;
+        }
+
+        .thread-counter {
+            color: #98847D;
             font-size: 11px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
-        .writer-copy span {
-            display: block;
-            margin-top: 2px;
-            color: var(--interlude-muted);
-            font-size: 9px;
-        }
-
-        .follow-btn {
-            flex: 0 0 auto;
-            padding: 7px 12px;
+        .post-thread-btn {
+            min-height: 40px;
+            padding: 0 18px;
             border: 0;
             border-radius: 999px;
-            background: var(--interlude-brown);
+            background: var(--home-brown);
             color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 9px;
-            font-weight: 800;
             cursor: pointer;
-            transition: .2s ease;
+            font: 800 12px 'Plus Jakarta Sans', sans-serif;
         }
 
-        .follow-btn:hover {
-            background: var(--interlude-orange);
+        .post-thread-btn:hover {
+            background: var(--home-orange);
         }
 
-        .trending-list {
+        /* STREAM */
+        .stream {
+            padding-top: 32px;
+        }
+
+        .stream-heading {
             display: flex;
-            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 0 2px 14px;
         }
 
-        .trending-row {
-            display: grid;
-            grid-template-columns: 34px minmax(0, 1fr) 14px;
-            gap: 10px;
-            align-items: start;
-            padding: 14px 0;
-            border-bottom: 1px solid #F0E7E2;
-            color: inherit;
+        .stream-kicker,
+        .sidebar-heading span,
+        .article-type {
+            color: var(--home-orange);
+            font: 800 10px 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .stream-heading h1 {
+            margin: 6px 0 0;
+            color: var(--home-brown-dark);
+            font: 800 29px/1.2 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: -.9px;
+        }
+
+        .stream-heading > a {
+            color: var(--home-brown);
+            font-size: 11px;
+            font-weight: 800;
             text-decoration: none;
         }
 
-        .trending-row:last-child {
-            border-bottom: 0;
+        .stream-heading > a:hover {
+            color: var(--home-orange);
         }
 
-        .trend-number {
-            color: #D8C8C1;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: -1px;
+        .stream-heading > a i {
+            margin-left: 6px;
         }
 
-        .trend-title {
-            color: var(--interlude-brown);
+        .stream-list {
+            display: grid;
+            gap: 16px;
+        }
+
+        /* THREAD */
+        .thread-card,
+        .feed-article-card {
+            border: 1px solid var(--home-border);
+            border-radius: 25px;
+            background: var(--home-white);
+            box-shadow: 0 10px 32px rgba(73,38,29,.045);
+        }
+
+        .thread-card {
+            padding: 21px 22px;
+        }
+
+        .thread-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .thread-author,
+        .article-byline,
+        .writer-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .thread-author {
+            gap: 10px;
+        }
+
+        .feed-avatar {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            font-size: 12px;
+        }
+
+        .feed-avatar--small {
+            width: 34px;
+            height: 34px;
+            flex-basis: 34px;
+            font-size: 10px;
+        }
+
+        .thread-author > div:last-child,
+        .article-byline > div:last-child {
+            display: grid;
+            gap: 2px;
+        }
+
+        .thread-author strong,
+        .article-byline strong {
+            color: var(--home-brown);
+            font-size: 13px;
+        }
+
+        .thread-author span,
+        .article-byline span {
+            color: var(--home-muted);
             font-size: 11px;
-            font-weight: 700;
-            line-height: 1.45;
-            transition: .2s ease;
         }
 
-        .trend-arrow {
-            margin-top: 3px;
-            color: #C3B0A8;
+        .thread-top-actions {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .thread-topic {
+            padding: 6px 9px;
+            border-radius: 999px;
+            background: var(--home-linen);
+            color: var(--home-brown);
+            font: 800 9px 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .thread-more {
+            width: 31px;
+            height: 31px;
+            display: grid;
+            place-items: center;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            color: #9A8780;
+            cursor: pointer;
+        }
+
+        .thread-more:hover {
+            color: #B42318;
+            background: #FFF0ED;
+        }
+
+        .thread-body {
+            padding: 18px 2px 17px 50px;
+            color: #332D2A;
+            font-size: 16px;
+            line-height: 1.68;
+            white-space: pre-wrap;
+        }
+
+        .thread-actions {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding-top: 12px;
+            border-top: 1px solid var(--home-border);
+        }
+
+        .thread-action {
+            min-height: 36px;
+            padding: 0 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--home-muted);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .thread-action:hover {
+            color: var(--home-orange);
+            background: var(--home-soft);
+        }
+
+        .thread-action.is-active {
+            color: var(--home-orange);
+        }
+
+        .thread-action--push {
+            margin-left: auto;
+        }
+
+        /* DISCUSSION */
+        .thread-discussion {
+            margin-top: 12px;
+            padding-top: 15px;
+            border-top: 1px solid var(--home-border);
+        }
+
+        .thread-comment-form {
+            display: grid;
+            grid-template-columns: 34px minmax(0,1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .comment-form-avatar {
+            width: 34px;
+            height: 34px;
+            font-size: 10px;
+        }
+
+        .thread-comment-form textarea,
+        .nested-reply-form textarea {
+            width: 100%;
+            resize: vertical;
+            padding: 10px 12px;
+            border: 1px solid var(--home-border);
+            border-radius: 13px;
+            outline: 0;
+            background: var(--home-soft);
+            color: var(--home-text);
+            font: 13px/1.55 'DM Sans', sans-serif;
+        }
+
+        .thread-comment-form textarea:focus,
+        .nested-reply-form textarea:focus {
+            border-color: rgba(251,77,0,.38);
+            background: white;
+        }
+
+        .comment-form-footer,
+        .nested-reply-footer {
+            margin-top: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .comment-form-footer span,
+        .nested-reply-footer span {
+            color: #9C8880;
             font-size: 9px;
         }
 
-        .trending-row:hover .trend-title,
-        .trending-row:hover .trend-arrow {
-            color: var(--interlude-orange);
+        .comment-form-footer button,
+        .nested-reply-footer button {
+            padding: 7px 12px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--home-brown);
+            color: white;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 800;
         }
 
-        .side-empty {
-            padding: 14px 0;
-            color: var(--interlude-muted);
+        .comments-list {
+            display: grid;
+        }
+
+        .comment-node {
+            margin-left: calc(var(--reply-depth) * 28px);
+            display: grid;
+            grid-template-columns: 32px minmax(0,1fr);
+            gap: 9px;
+        }
+
+        .comment-rail {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .comment-avatar {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            font-size: 9px;
+            background: var(--home-linen);
+        }
+
+        .comment-line {
+            width: 2px;
+            flex: 1;
+            min-height: 20px;
+            margin-top: 5px;
+            border-radius: 999px;
+            background: var(--home-border);
+        }
+
+        .comment-content {
+            min-width: 0;
+            padding: 3px 0 13px;
+        }
+
+        .comment-byline {
+            display: flex;
+            align-items: baseline;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .comment-byline strong {
+            color: var(--home-brown);
+            font-size: 11px;
+        }
+
+        .comment-byline span {
+            color: #9C8981;
+            font-size: 9px;
+        }
+
+        .comment-content > p {
+            margin: 4px 0 5px;
+            color: #443B37;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .comment-reply-btn {
+            padding: 3px 6px;
+            border: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: var(--home-muted);
+            cursor: pointer;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .comment-reply-btn:hover {
+            color: var(--home-orange);
+            background: var(--home-soft);
+        }
+
+        .nested-reply-form {
+            margin: 8px 0 4px;
+            padding: 10px;
+            border-radius: 13px;
+            background: var(--home-soft);
+        }
+
+        .nested-reply-form textarea {
+            background: white;
+        }
+
+        .comment-children {
+            margin-top: 8px;
+        }
+
+        .comment-empty {
+            padding: 16px;
+            border-radius: 14px;
+            background: var(--home-soft);
+            color: var(--home-muted);
             font-size: 11px;
             text-align: center;
         }
 
-        .latest-section {
-            padding-top: 72px;
+        /* ARTICLE */
+        .feed-article-link {
+            color: inherit;
+            text-decoration: none;
         }
 
-        .article-grid {
+        .feed-article-card {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 20px;
+            grid-template-columns: minmax(0,1fr) 190px;
+            gap: 24px;
+            padding: 22px;
+            transition: .22s ease;
         }
 
-        .article-card {
-            height: 100%;
-            overflow: hidden;
-            border: 1px solid var(--interlude-border);
-            border-radius: 26px;
-            background: white;
-            box-shadow: 0 10px 32px rgba(73, 38, 29, .04);
-            transition: .28s ease;
+        .feed-article-link:hover .feed-article-card {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 40px rgba(73,38,29,.08);
         }
 
-        .article-link:hover .article-card {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 45px rgba(73, 38, 29, .09);
+        .feed-article-copy {
+            min-width: 0;
         }
 
-        .article-cover {
-            position: relative;
-            height: 200px;
-            overflow: hidden;
-            background: var(--interlude-soft);
-        }
-
-        .article-cover img {
-            transition: .4s ease;
-        }
-
-        .article-link:hover .article-cover img {
-            transform: scale(1.035);
-        }
-
-        .article-placeholder i {
-            font-size: 36px;
-            opacity: .25;
-        }
-
-        .placeholder-category {
-            padding: 7px 10px;
-            background: rgba(255,255,255,.72);
-            color: var(--interlude-brown);
-        }
-
-        .article-category {
-            position: absolute;
-            top: 14px;
-            left: 14px;
-            padding: 7px 10px;
-            background: rgba(255,255,255,.92);
-            color: var(--interlude-brown);
-            box-shadow: 0 4px 15px rgba(73,38,29,.05);
-        }
-
-        .article-body {
-            padding: 20px;
-        }
-
-        .article-author {
+        .article-byline {
+            gap: 9px;
             margin-bottom: 16px;
         }
 
-        .article-body h3 {
+        .article-type {
+            display: inline-block;
+            margin-bottom: 7px;
+        }
+
+        .feed-article-card h2 {
             margin: 0;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 19px;
-            font-weight: 800;
-            letter-spacing: -.55px;
-            line-height: 1.28;
-            transition: .2s ease;
+            color: var(--home-brown-dark);
+            font: 800 23px/1.26 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: -.6px;
         }
 
-        .article-link:hover .article-body h3 {
-            color: var(--interlude-orange);
+        .feed-article-link:hover h2 {
+            color: var(--home-orange);
         }
 
-        .article-body > p {
-            margin: 10px 0 0;
-            color: var(--interlude-muted);
-            font-size: 12px;
-            line-height: 1.65;
+        .feed-article-card p {
+            margin: 9px 0 0;
+            color: var(--home-muted);
+            font-size: 13px;
+            line-height: 1.6;
         }
 
-        .article-meta {
-            gap: 14px;
-            margin-top: 18px;
-            padding-top: 15px;
-            border-top: 1px solid #EFE6E1;
-            color: #88756D;
-            font-size: 10px;
+        .feed-article-meta {
+            margin-top: 17px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 13px;
+            color: #8E7A73;
+            font-size: 11px;
         }
 
-        .article-meta span {
+        .feed-article-meta span {
             display: inline-flex;
             align-items: center;
             gap: 5px;
         }
 
-        .article-arrow {
-            margin-left: auto;
-            color: var(--interlude-brown);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 800;
+        .feed-article-cover {
+            width: 190px;
+            height: 155px;
+            align-self: center;
         }
 
-        .empty-state {
-            grid-column: 1 / -1;
-            padding: 70px 30px;
-            border: 1px dashed var(--interlude-border);
-            border-radius: 28px;
-            background: rgba(255,255,255,.7);
+        .feed-article-cover img,
+        .feed-article-placeholder {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 19px;
+        }
+
+        .feed-article-placeholder {
+            display: grid;
+            place-items: center;
+            align-content: center;
+            gap: 8px;
+            color: var(--home-brown);
             text-align: center;
         }
 
-        .empty-icon {
-            width: 62px;
-            height: 62px;
-            margin: 0 auto 18px;
-            font-size: 22px;
+        .feed-article-placeholder i {
+            font-size: 25px;
         }
 
-        .empty-state h3 {
-            margin: 0;
-            color: var(--interlude-brown);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 21px;
-        }
-
-        .empty-state p {
-            margin: 8px 0 20px;
-            color: var(--interlude-muted);
-            font-size: 13px;
-        }
-
-        .empty-cta {
-            padding: 11px 16px;
-            background: var(--interlude-brown);
-            color: white;
-            font-size: 11px;
+        .feed-article-placeholder span {
+            max-width: 125px;
+            font-size: 10px;
             font-weight: 800;
         }
 
-        .empty-cta:hover {
-            background: var(--interlude-orange);
-            color: white;
-        }
-
-        .pagination-wrap {
-            margin-top: 34px;
-        }
-
-        .contribution-banner {
+        /* SIDEBAR */
+        .home-sidebar {
+            position: sticky;
+            top: 112px;
             display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto;
-            gap: 22px;
-            align-items: center;
-            margin-top: 70px;
-            padding: 28px 30px;
-            border-radius: 30px;
-            background: var(--interlude-linen);
+            gap: 16px;
         }
 
-        .contribution-icon {
+        .sidebar-card {
+            padding: 20px;
+            border: 1px solid var(--home-border);
+            border-radius: 23px;
+            background: rgba(255,255,255,.88);
+            box-shadow: 0 10px 30px rgba(73,38,29,.04);
+        }
+
+        .sidebar-heading {
             display: flex;
-            width: 58px;
-            height: 58px;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: white;
-            color: var(--interlude-orange);
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 17px;
+        }
+
+        .sidebar-heading h2 {
+            margin: 5px 0 0;
+            color: var(--home-brown-dark);
+            font: 800 20px 'Plus Jakarta Sans', sans-serif;
+            letter-spacing: -.5px;
+        }
+
+        .sidebar-heading > i {
+            color: #A9CFE2;
             font-size: 18px;
         }
 
-        .contribution-copy h2 {
-            margin: 5px 0 4px;
-            color: var(--interlude-brown-dark);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -.65px;
+        .writer-list,
+        .trending-list {
+            display: grid;
+            gap: 5px;
         }
 
-        .contribution-copy p {
-            margin: 0;
-            color: var(--interlude-muted);
+        .writer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 0;
+        }
+
+        .writer-info {
+            min-width: 0;
+            gap: 9px;
+        }
+
+        .writer-avatar {
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            font-size: 11px;
+            background: var(--home-linen);
+        }
+
+        .writer-info > div:last-child {
+            min-width: 0;
+            display: grid;
+            gap: 1px;
+        }
+
+        .writer-info strong {
+            overflow: hidden;
+            color: var(--home-brown);
             font-size: 12px;
-        }
-
-        .contribution-cta {
-            padding: 12px 17px;
-            background: var(--interlude-orange);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 10px;
-            font-weight: 800;
+            text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .contribution-cta:hover {
-            background: var(--interlude-brown);
+        .writer-info span {
+            color: var(--home-muted);
+            font-size: 10px;
+        }
+
+        .follow-btn {
+            flex: 0 0 auto;
+            padding: 7px 11px;
+            border: 0;
+            border-radius: 999px;
+            background: var(--home-brown);
             color: white;
-            transform: translateY(-1px);
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 800;
         }
 
-        @media (max-width: 1080px) {
-            .dashboard-bento {
+        .follow-btn:hover {
+            background: var(--home-orange);
+        }
+
+        .trend-row {
+            display: grid;
+            grid-template-columns: 29px minmax(0,1fr);
+            gap: 9px;
+            padding: 11px 0;
+            border-top: 1px solid var(--home-border);
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .trend-row:first-child {
+            border-top: 0;
+        }
+
+        .trend-no {
+            color: #C8B6AF;
+            font: 800 15px 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .trend-row > div {
+            display: grid;
+            gap: 4px;
+        }
+
+        .trend-row strong {
+            color: var(--home-brown);
+            font-size: 12px;
+            line-height: 1.42;
+        }
+
+        .trend-row:hover strong {
+            color: var(--home-orange);
+        }
+
+        .trend-row span:last-child {
+            color: var(--home-muted);
+            font-size: 9px;
+        }
+
+        .sidebar-empty {
+            margin: 0;
+            color: var(--home-muted);
+            font-size: 11px;
+        }
+
+        /* EMPTY */
+        .feed-empty {
+            padding: 55px 24px;
+            display: grid;
+            justify-items: center;
+            border: 1px dashed var(--home-border);
+            border-radius: 24px;
+            background: rgba(255,255,255,.56);
+            text-align: center;
+        }
+
+        .feed-empty-icon {
+            width: 55px;
+            height: 55px;
+            display: grid;
+            place-items: center;
+            border-radius: 18px;
+            background: var(--home-linen);
+            color: var(--home-brown);
+            font-size: 20px;
+        }
+
+        .feed-empty h2 {
+            margin: 17px 0 5px;
+            color: var(--home-brown-dark);
+            font: 800 20px 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .feed-empty p {
+            max-width: 430px;
+            margin: 0;
+            color: var(--home-muted);
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 1040px) {
+            .home-shell {
                 grid-template-columns: 1fr;
             }
 
-            .side-column {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                padding-top: 0;
-            }
-
-            .article-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
+            .home-sidebar {
+                position: static;
+                grid-template-columns: repeat(2, minmax(0,1fr));
             }
         }
 
-        @media (max-width: 820px) {
-            .dashboard-shell {
-                width: min(100% - 30px, 1280px);
-                padding-top: 36px;
+        @media (max-width: 700px) {
+            .home-feed-page {
+                padding: 22px 16px 70px;
             }
 
-            .dashboard-hero {
+            .feed-tabs {
+                border-radius: 18px;
+            }
+
+            .thread-composer,
+            .thread-card {
+                padding: 17px;
+                border-radius: 21px;
+            }
+
+            .stream-heading {
                 align-items: flex-start;
                 flex-direction: column;
-                gap: 20px;
             }
 
-            .hero-copy h1 {
-                font-size: clamp(40px, 9vw, 58px);
-                letter-spacing: -2px;
+            .stream-heading h1 {
+                font-size: 25px;
             }
 
-            .write-cta {
-                align-self: flex-start;
+            .thread-body {
+                padding-left: 0;
             }
 
-            .featured-card {
-                grid-template-columns: 1fr;
-                min-height: auto;
+            .feed-article-card {
+                grid-template-columns: minmax(0,1fr) 100px;
+                gap: 14px;
+                padding: 17px;
+                border-radius: 21px;
             }
 
-            .featured-visual-wrap {
-                min-height: 280px;
+            .feed-article-cover {
+                width: 100px;
+                height: 100px;
             }
 
-            .featured-cover-card {
-                width: 180px;
-                right: 30px;
-                bottom: 20px;
+            .feed-article-card h2 {
+                font-size: 18px;
             }
 
-            .side-column {
+            .feed-article-card p {
+                display: none;
+            }
+
+            .feed-article-meta span:nth-child(n+2) {
+                display: none;
+            }
+
+            .home-sidebar {
                 grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 640px) {
-            .dashboard-shell {
-                width: min(100% - 24px, 1280px);
-                padding: 26px 0 60px;
+        @media (max-width: 480px) {
+            .composer-row {
+                grid-template-columns: 36px minmax(0,1fr);
             }
 
-            .hero-copy h1 {
-                font-size: 40px;
-                line-height: 1.07;
+            .composer-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 11px;
             }
 
-            .hero-copy p {
-                font-size: 14px;
+            .composer-meta {
+                align-items: stretch;
+                flex-direction: column;
             }
 
-            .write-cta {
+            .composer-meta label {
+                justify-content: space-between;
+            }
+
+            .thread-card-top {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .thread-top-actions {
                 width: 100%;
+                justify-content: space-between;
             }
 
-            .search-form {
-                padding-left: 15px;
+            .thread-actions {
+                justify-content: space-between;
             }
 
-            .search-form button {
-                width: 46px;
-                padding: 0;
-                font-size: 0;
+            .thread-action {
+                padding-inline: 8px;
             }
 
-            .search-form button i {
-                margin: 0;
-                font-size: 12px;
+            .thread-action span {
+                display: none;
             }
 
-            .search-hint {
-                margin-left: 4px;
-                line-height: 1.5;
+            .thread-action--push {
+                margin-left: 0;
             }
 
-            .topic-strip {
-                padding-bottom: 28px;
-            }
-
-            .section-heading {
-                align-items: flex-start;
-                flex-direction: column;
-                gap: 9px;
-            }
-
-            .section-heading h2 {
-                font-size: 24px;
-            }
-
-            .featured-copy {
-                padding: 24px;
-            }
-
-            .featured-main-copy {
-                padding: 34px 0 24px;
-            }
-
-            .featured-main-copy h3 {
-                font-size: 34px;
-                letter-spacing: -1.4px;
-            }
-
-            .featured-footer {
-                align-items: flex-start;
-                flex-direction: column;
-                gap: 15px;
-            }
-
-            .featured-visual-wrap {
-                min-height: 250px;
-            }
-
-            .featured-cover-card {
-                width: 155px;
-                right: 24px;
-                bottom: 22px;
-            }
-
-            .latest-section {
-                padding-top: 50px;
-            }
-
-            .article-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .article-cover {
-                height: 190px;
-            }
-
-            .contribution-banner {
-                grid-template-columns: 1fr;
-                padding: 24px;
-            }
-
-            .contribution-cta {
-                width: 100%;
+            .comment-node {
+                margin-left: calc(min(var(--reply-depth), 2) * 16px);
             }
         }
     </style>
 
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-            const csrfToken = csrfMeta ? csrfMeta.content : '';
+            const csrfMeta = document.querySelector(
+                'meta[name="csrf-token"]'
+            );
 
-            window.toggleFollow = async function (userId, button) {
-                if (!csrfToken || !button) return;
+            const csrfToken = csrfMeta
+                ? csrfMeta.content
+                : '';
 
-                const originalText = button.textContent.trim();
-                button.disabled = true;
+            // Composer counter
+            const threadBody =
+                document.getElementById('threadBody');
 
-                try {
-                    const response = await fetch(`/users/${userId}/follow`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Accept': 'application/json'
-                        }
-                    });
+            const threadCounter =
+                document.getElementById('threadCounter');
 
-                    const data = await response.json();
-
-                    if (data.success) {
-                        if (data.following) {
-                            button.textContent = 'Mengikuti';
-                            button.style.background = '#FFFFFF';
-                            button.style.color = '#49261D';
-                            button.style.border = '1px solid #E7DAD4';
-                        } else {
-                            button.textContent = 'Ikuti';
-                            button.style.background = '#49261D';
-                            button.style.color = '#FFFFFF';
-                            button.style.border = '0';
-                        }
-                    } else {
-                        button.textContent = originalText;
-                    }
-                } catch (error) {
-                    console.error('Follow error:', error);
-                    button.textContent = originalText;
-                } finally {
-                    button.disabled = false;
+            function syncThreadCounter() {
+                if (
+                    threadBody
+                    && threadCounter
+                ) {
+                    threadCounter.textContent =
+                        threadBody.value.length;
                 }
-            };
+            }
+
+            if (threadBody) {
+                threadBody.addEventListener(
+                    'input',
+                    syncThreadCounter
+                );
+
+                syncThreadCounter();
+            }
+
+
+            // Like
+            document
+                .querySelectorAll('[data-thread-like]')
+                .forEach(function (button) {
+
+                    button.addEventListener(
+                        'click',
+                        async function () {
+                            const url =
+                                button.dataset.url;
+
+                            if (!url || !csrfToken) {
+                                return;
+                            }
+
+                            try {
+                                const response =
+                                    await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type':
+                                                'application/json',
+                                            'X-CSRF-TOKEN':
+                                                csrfToken,
+                                            'Accept':
+                                                'application/json'
+                                        }
+                                    });
+
+                                const data =
+                                    await response.json();
+
+                                if (!data.success) {
+                                    return;
+                                }
+
+                                button.classList.toggle(
+                                    'is-active',
+                                    data.liked
+                                );
+
+                                const icon =
+                                    button.querySelector('i');
+
+                                const count =
+                                    button.querySelector(
+                                        '[data-like-count]'
+                                    );
+
+                                if (icon) {
+                                    icon.className =
+                                        `${data.liked ? 'fas' : 'far'} fa-heart`;
+                                }
+
+                                if (count) {
+                                    count.textContent =
+                                        data.count;
+                                }
+                            } catch (error) {
+                                console.error(
+                                    'Thread like error:',
+                                    error
+                                );
+                            }
+                        }
+                    );
+                });
+
+
+            // Bookmark
+            document
+                .querySelectorAll(
+                    '[data-thread-bookmark]'
+                )
+                .forEach(function (button) {
+
+                    button.addEventListener(
+                        'click',
+                        async function () {
+                            const url =
+                                button.dataset.url;
+
+                            if (!url || !csrfToken) {
+                                return;
+                            }
+
+                            try {
+                                const response =
+                                    await fetch(url, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type':
+                                                'application/json',
+                                            'X-CSRF-TOKEN':
+                                                csrfToken,
+                                            'Accept':
+                                                'application/json'
+                                        }
+                                    });
+
+                                const data =
+                                    await response.json();
+
+                                if (!data.success) {
+                                    return;
+                                }
+
+                                button.classList.toggle(
+                                    'is-active',
+                                    data.bookmarked
+                                );
+
+                                const icon =
+                                    button.querySelector('i');
+
+                                if (icon) {
+                                    icon.className =
+                                        `${data.bookmarked ? 'fas' : 'far'} fa-bookmark`;
+                                }
+                            } catch (error) {
+                                console.error(
+                                    'Thread bookmark error:',
+                                    error
+                                );
+                            }
+                        }
+                    );
+                });
+
+
+            // Toggle comments
+            document
+                .querySelectorAll(
+                    '[data-toggle-discussion]'
+                )
+                .forEach(function (button) {
+
+                    button.addEventListener(
+                        'click',
+                        function () {
+                            const id =
+                                button.dataset
+                                    .toggleDiscussion;
+
+                            const discussion =
+                                document.getElementById(
+                                    `threadDiscussion${id}`
+                                );
+
+                            if (!discussion) return;
+
+                            discussion.hidden =
+                                !discussion.hidden;
+
+                            if (!discussion.hidden) {
+                                const textarea =
+                                    discussion.querySelector(
+                                        '.thread-comment-form textarea'
+                                    );
+
+                                if (textarea) {
+                                    textarea.focus();
+                                }
+                            }
+                        }
+                    );
+                });
+
+
+            // Toggle reply to a comment
+            document
+                .querySelectorAll(
+                    '[data-toggle-comment-reply]'
+                )
+                .forEach(function (button) {
+
+                    button.addEventListener(
+                        'click',
+                        function () {
+                            const id =
+                                button.dataset
+                                    .toggleCommentReply;
+
+                            const form =
+                                document.getElementById(
+                                    `commentReply${id}`
+                                );
+
+                            if (!form) return;
+
+                            form.hidden = !form.hidden;
+
+                            if (!form.hidden) {
+                                const textarea =
+                                    form.querySelector(
+                                        'textarea'
+                                    );
+
+                                if (textarea) {
+                                    textarea.focus();
+                                }
+                            }
+                        }
+                    );
+                });
+
+
+            // Share
+            document
+                .querySelectorAll('[data-share-thread]')
+                .forEach(function (button) {
+
+                    button.addEventListener(
+                        'click',
+                        async function () {
+                            try {
+                                if (navigator.share) {
+                                    await navigator.share({
+                                        title:
+                                            'Utas Interlude',
+                                        url:
+                                            window.location.href
+                                    });
+
+                                    return;
+                                }
+
+                                await navigator.clipboard
+                                    .writeText(
+                                        window.location.href
+                                    );
+
+                                alert(
+                                    'Tautan halaman berhasil disalin.'
+                                );
+                            } catch (error) {
+                                if (
+                                    error.name !== 'AbortError'
+                                ) {
+                                    console.error(
+                                        'Share error:',
+                                        error
+                                    );
+                                }
+                            }
+                        }
+                    );
+                });
+
+
+            window.toggleFollow =
+                async function (
+                    userId,
+                    button
+                ) {
+                    if (!csrfToken || !button) {
+                        return;
+                    }
+
+                    const originalText =
+                        button.textContent.trim();
+
+                    button.disabled = true;
+
+                    try {
+                        const response =
+                            await fetch(
+                                `/users/${userId}/follow`,
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type':
+                                            'application/json',
+                                        'X-CSRF-TOKEN':
+                                            csrfToken,
+                                        'Accept':
+                                            'application/json'
+                                    }
+                                }
+                            );
+
+                        const data =
+                            await response.json();
+
+                        if (data.success) {
+                            if (data.following) {
+                                button.textContent =
+                                    'Mengikuti';
+
+                                button.style.background =
+                                    '#FFFFFF';
+
+                                button.style.color =
+                                    '#49261D';
+
+                                button.style.border =
+                                    '1px solid #E8DCD6';
+                            } else {
+                                button.textContent =
+                                    'Ikuti';
+
+                                button.style.background =
+                                    '#49261D';
+
+                                button.style.color =
+                                    '#FFFFFF';
+
+                                button.style.border =
+                                    '0';
+                            }
+                        } else {
+                            button.textContent =
+                                originalText;
+                        }
+                    } catch (error) {
+                        button.textContent =
+                            originalText;
+
+                        console.error(
+                            'Follow error:',
+                            error
+                        );
+                    } finally {
+                        button.disabled = false;
+                    }
+                };
         });
     </script>
+
 </x-app-layout>

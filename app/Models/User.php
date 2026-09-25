@@ -70,16 +70,34 @@ class User extends Authenticatable
         return $this->hasMany(Comment::class);
     }
 
-    // Riwayat baca user.
     public function articleViews()
     {
         return $this->hasMany(ArticleView::class);
     }
 
-    // Riwayat unduhan user.
     public function articleDownloads()
     {
         return $this->hasMany(ArticleDownload::class);
+    }
+
+    public function threads()
+    {
+        return $this->hasMany(Thread::class);
+    }
+
+    public function threadLikes()
+    {
+        return $this->hasMany(ThreadLike::class);
+    }
+
+    public function threadBookmarks()
+    {
+        return $this->hasMany(ThreadBookmark::class);
+    }
+
+    public function threadReplies()
+    {
+        return $this->hasMany(ThreadReply::class);
     }
 
     public function isFollowing($user)

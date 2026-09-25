@@ -4,19 +4,33 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ThreadController;
 use Illuminate\Support\Facades\Route;
 
-// Landing page
 Route::get('/', function () {
     return view('welcome');
 });
 
-// Authenticated routes
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+
+    // Utas
+    Route::post('/threads', [ThreadController::class, 'store'])
+        ->name('threads.store');
+
+    Route::post('/threads/{thread}/like', [ThreadController::class, 'like'])
+        ->name('threads.like');
+
+    Route::post('/threads/{thread}/bookmark', [ThreadController::class, 'bookmark'])
+        ->name('threads.bookmark');
+
+    Route::post('/threads/{thread}/replies', [ThreadController::class, 'reply'])
+        ->name('threads.replies.store');
+
+    Route::delete('/threads/{thread}', [ThreadController::class, 'destroy'])
+        ->name('threads.destroy');
 
     // Explore
     Route::get('/explore', [ArticleController::class, 'explore'])
@@ -35,7 +49,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/articles', [ArticleController::class, 'store'])
         ->name('articles.store');
 
-    // Download harus didefinisikan sebelum route show generic.
     Route::get('/articles/{article}/download', [ArticleController::class, 'download'])
         ->name('articles.download');
 
@@ -51,7 +64,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/articles/{article}', [ArticleController::class, 'destroy'])
         ->name('articles.destroy');
 
-    // Interactions
     Route::post('/articles/{article}/like', [InteractionController::class, 'like'])
         ->name('articles.like');
 
