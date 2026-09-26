@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
@@ -11,7 +12,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
@@ -91,6 +92,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
+});
+
+// Admin routes (guard admin, terpisah dari guard web)
+Route::middleware(['auth:admin', 'prevent-back-history'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard_admin');
+    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+    Route::post('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
+    Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
 });
 
 require __DIR__.'/auth.php';
