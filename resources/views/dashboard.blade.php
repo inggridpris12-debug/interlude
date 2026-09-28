@@ -92,47 +92,6 @@
                                 hidden
                             ></div>
 
-                            <div
-                                id="linkPanel"
-                                class="composer-extra-panel"
-                                hidden
-                            >
-                                <i class="fas fa-link"></i>
-
-                                <input
-                                    type="url"
-                                    name="link"
-                                    placeholder="Tempel tautan di sini..."
-                                    value="{{ old('link') }}"
-                                >
-                            </div>
-
-                            <div
-                                id="pollPanel"
-                                class="composer-poll-panel"
-                                hidden
-                            >
-                                <input
-                                    type="text"
-                                    name="poll_question"
-                                    maxlength="180"
-                                    placeholder="Pertanyaan polling..."
-                                    value="{{ old('poll_question') }}"
-                                >
-
-                                <div class="poll-input-grid">
-                                    @for($i = 0; $i < 4; $i++)
-                                        <input
-                                            type="text"
-                                            name="poll_options[]"
-                                            maxlength="100"
-                                            placeholder="Pilihan {{ $i + 1 }}{{ $i > 1 ? ' (opsional)' : '' }}"
-                                            value="{{ old('poll_options.' . $i) }}"
-                                        >
-                                    @endfor
-                                </div>
-                            </div>
-
                             <div class="composer-meta">
                                 <label>
                                     <span>Topik</span>
@@ -225,8 +184,9 @@
                                     <button
                                         type="button"
                                         class="composer-tool"
-                                        data-toggle-extra="linkPanel"
+                                        data-open-composer-modal="linkModal"
                                         title="Tautan"
+                                        aria-label="Tambahkan tautan"
                                     >
                                         <i class="fas fa-link"></i>
                                     </button>
@@ -234,8 +194,9 @@
                                     <button
                                         type="button"
                                         class="composer-tool"
-                                        data-toggle-extra="pollPanel"
+                                        data-open-composer-modal="pollModal"
                                         title="Polling"
+                                        aria-label="Buat polling"
                                     >
                                         <i class="fas fa-chart-simple"></i>
                                     </button>
@@ -256,6 +217,205 @@
                                 </div>
 
                             </div>
+
+
+                            {{-- =====================================================
+                                 POPUP LINK
+                            ====================================================== --}}
+                            <div
+                                id="linkModal"
+                                class="composer-modal"
+                                hidden
+                                aria-hidden="true"
+                            >
+                                <div
+                                    class="composer-modal-backdrop"
+                                    data-close-composer-modal
+                                ></div>
+
+                                <div
+                                    class="composer-modal-dialog composer-modal-dialog--small"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="linkModalTitle"
+                                >
+                                    <div class="composer-modal-head">
+                                        <div>
+                                            <span class="composer-modal-kicker">
+                                                Tautan
+                                            </span>
+
+                                            <h3 id="linkModalTitle">
+                                                Tambahkan tautan
+                                            </h3>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            class="composer-modal-close"
+                                            data-close-composer-modal
+                                            aria-label="Tutup"
+                                        >
+                                            <i class="fas fa-xmark"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="composer-modal-body">
+
+                                        <label class="composer-modal-field">
+                                            <span>URL</span>
+
+                                            <div class="composer-modal-input">
+                                                <i class="fas fa-link"></i>
+
+                                                <input
+                                                    id="composerLinkInput"
+                                                    type="url"
+                                                    name="link"
+                                                    placeholder="https://..."
+                                                    value="{{ old('link') }}"
+                                                >
+                                            </div>
+                                        </label>
+
+                                        <p class="composer-modal-help">
+                                            Tempel artikel, jurnal, website, atau sumber lain yang ingin kamu bagikan.
+                                        </p>
+
+                                    </div>
+
+                                    <div class="composer-modal-footer">
+
+                                        <button
+                                            type="button"
+                                            class="modal-secondary-btn"
+                                            data-clear-link
+                                        >
+                                            Hapus
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="modal-primary-btn"
+                                            data-save-composer-modal
+                                        >
+                                            Tambahkan
+                                        </button>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            {{-- =====================================================
+                                 POPUP POLLING
+                            ====================================================== --}}
+                            <div
+                                id="pollModal"
+                                class="composer-modal"
+                                hidden
+                                aria-hidden="true"
+                            >
+                                <div
+                                    class="composer-modal-backdrop"
+                                    data-close-composer-modal
+                                ></div>
+
+                                <div
+                                    class="composer-modal-dialog"
+                                    role="dialog"
+                                    aria-modal="true"
+                                    aria-labelledby="pollModalTitle"
+                                >
+                                    <div class="composer-modal-head">
+                                        <div>
+                                            <span class="composer-modal-kicker">
+                                                Polling
+                                            </span>
+
+                                            <h3 id="pollModalTitle">
+                                                Buat polling
+                                            </h3>
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            class="composer-modal-close"
+                                            data-close-composer-modal
+                                            aria-label="Tutup"
+                                        >
+                                            <i class="fas fa-xmark"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="composer-modal-body">
+
+                                        <label class="composer-modal-field">
+                                            <span>Pertanyaan</span>
+
+                                            <input
+                                                id="pollQuestionInput"
+                                                type="text"
+                                                name="poll_question"
+                                                maxlength="180"
+                                                placeholder="Tanyakan sesuatu..."
+                                                value="{{ old('poll_question') }}"
+                                            >
+                                        </label>
+
+                                        <div class="composer-modal-field">
+                                            <span>Pilihan jawaban</span>
+
+                                            <div class="modal-poll-options">
+
+                                                @for($i = 0; $i < 4; $i++)
+                                                    <div class="modal-poll-option">
+
+                                                        <span>{{ $i + 1 }}</span>
+
+                                                        <input
+                                                            type="text"
+                                                            name="poll_options[]"
+                                                            maxlength="100"
+                                                            placeholder="Pilihan {{ $i + 1 }}{{ $i > 1 ? ' (opsional)' : '' }}"
+                                                            value="{{ old('poll_options.' . $i) }}"
+                                                            data-poll-option
+                                                        >
+
+                                                    </div>
+                                                @endfor
+
+                                            </div>
+                                        </div>
+
+                                        <p class="composer-modal-help">
+                                            Isi minimal 2 pilihan. Maksimal 4 pilihan jawaban.
+                                        </p>
+
+                                    </div>
+
+                                    <div class="composer-modal-footer">
+
+                                        <button
+                                            type="button"
+                                            class="modal-secondary-btn"
+                                            data-clear-poll
+                                        >
+                                            Hapus polling
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="modal-primary-btn"
+                                            data-save-composer-modal
+                                        >
+                                            Simpan polling
+                                        </button>
+
+                                    </div>
+                                </div>
+                            </div>
+
                         </form>
                     </div>
                 </section>
@@ -667,17 +827,266 @@
             border-radius:999px;background:#fff;color:var(--home-muted);font-size:10px;
         }
         .preview-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .composer-extra-panel,.composer-poll-panel{
-            margin:8px 0 12px;padding:12px;border:1px solid var(--home-border);
-            border-radius:15px;background:var(--home-soft);
+        /* LINK + POLLING POPUP */
+        .composer-modal[hidden]{
+            display:none !important;
         }
-        .composer-extra-panel{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:center}
-        .composer-extra-panel input,.composer-poll-panel input{
-            width:100%;height:38px;padding:0 11px;border:1px solid var(--home-border);
-            border-radius:10px;background:#fff;outline:0;font-size:11px;
+
+        .composer-modal{
+            position:fixed;
+            inset:0;
+            z-index:5000;
+            display:grid;
+            place-items:center;
+            padding:20px;
         }
-        .composer-poll-panel{display:grid;gap:9px}
-        .poll-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+
+        .composer-modal-backdrop{
+            position:absolute;
+            inset:0;
+            background:rgba(48,18,10,.30);
+            backdrop-filter:blur(5px);
+            -webkit-backdrop-filter:blur(5px);
+        }
+
+        .composer-modal-dialog{
+            position:relative;
+            z-index:1;
+            width:min(560px,100%);
+            max-height:calc(100vh - 40px);
+            overflow:auto;
+            border:1px solid var(--home-border);
+            border-radius:24px;
+            background:#fff;
+            box-shadow:0 28px 80px rgba(48,18,10,.20);
+            animation:composerModalIn .18s ease-out;
+        }
+
+        .composer-modal-dialog--small{
+            width:min(500px,100%);
+        }
+
+        @keyframes composerModalIn{
+            from{
+                opacity:0;
+                transform:translateY(8px) scale(.985);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0) scale(1);
+            }
+        }
+
+        .composer-modal-head{
+            padding:20px 22px 16px;
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:18px;
+            border-bottom:1px solid var(--home-border);
+        }
+
+        .composer-modal-kicker{
+            display:block;
+            margin-bottom:4px;
+            color:var(--home-orange);
+            font:800 9px 'Plus Jakarta Sans',sans-serif;
+            letter-spacing:1px;
+            text-transform:uppercase;
+        }
+
+        .composer-modal-head h3{
+            margin:0;
+            color:var(--home-brown-dark);
+            font:800 21px/1.2 'Plus Jakarta Sans',sans-serif;
+            letter-spacing:-.5px;
+        }
+
+        .composer-modal-close{
+            width:36px;
+            height:36px;
+            flex:0 0 36px;
+            display:grid;
+            place-items:center;
+            border:0;
+            border-radius:50%;
+            background:var(--home-soft);
+            color:var(--home-brown);
+            cursor:pointer;
+        }
+
+        .composer-modal-close:hover{
+            background:var(--home-linen);
+            color:var(--home-orange);
+        }
+
+        .composer-modal-body{
+            padding:20px 22px;
+            display:grid;
+            gap:16px;
+        }
+
+        .composer-modal-field{
+            display:grid;
+            gap:7px;
+        }
+
+        .composer-modal-field>span{
+            color:var(--home-brown);
+            font-size:11px;
+            font-weight:800;
+        }
+
+        .composer-modal-field>input,
+        .composer-modal-input{
+            width:100%;
+            min-height:44px;
+            border:1px solid var(--home-border);
+            border-radius:13px;
+            background:var(--home-soft);
+        }
+
+        .composer-modal-field>input{
+            padding:0 13px;
+            outline:0;
+            color:var(--home-text);
+            font:500 12px 'DM Sans',sans-serif;
+        }
+
+        .composer-modal-input{
+            padding:0 13px;
+            display:flex;
+            align-items:center;
+            gap:9px;
+        }
+
+        .composer-modal-input i{
+            color:var(--home-orange);
+            font-size:12px;
+        }
+
+        .composer-modal-input input{
+            min-width:0;
+            flex:1;
+            height:42px;
+            border:0;
+            outline:0;
+            background:transparent;
+            color:var(--home-text);
+            font:500 12px 'DM Sans',sans-serif;
+        }
+
+        .composer-modal-field>input:focus,
+        .composer-modal-input:focus-within{
+            border-color:rgba(251,77,0,.38);
+            background:#fff;
+            box-shadow:0 0 0 4px rgba(251,77,0,.06);
+        }
+
+        .modal-poll-options{
+            display:grid;
+            gap:8px;
+        }
+
+        .modal-poll-option{
+            min-height:44px;
+            padding:0 12px;
+            display:grid;
+            grid-template-columns:25px minmax(0,1fr);
+            align-items:center;
+            gap:8px;
+            border:1px solid var(--home-border);
+            border-radius:13px;
+            background:var(--home-soft);
+        }
+
+        .modal-poll-option>span{
+            width:24px;
+            height:24px;
+            display:grid;
+            place-items:center;
+            border-radius:50%;
+            background:var(--home-linen);
+            color:var(--home-brown);
+            font-size:9px;
+            font-weight:800;
+        }
+
+        .modal-poll-option input{
+            width:100%;
+            height:42px;
+            border:0;
+            outline:0;
+            background:transparent;
+            color:var(--home-text);
+            font:500 12px 'DM Sans',sans-serif;
+        }
+
+        .composer-modal-help{
+            margin:0;
+            color:#907D75;
+            font-size:10px;
+            line-height:1.55;
+        }
+
+        .composer-modal-footer{
+            padding:14px 22px 20px;
+            display:flex;
+            align-items:center;
+            justify-content:flex-end;
+            gap:8px;
+        }
+
+        .modal-secondary-btn,
+        .modal-primary-btn{
+            min-height:39px;
+            padding:0 15px;
+            border-radius:999px;
+            cursor:pointer;
+            font:800 11px 'Plus Jakarta Sans',sans-serif;
+        }
+
+        .modal-secondary-btn{
+            border:1px solid var(--home-border);
+            background:#fff;
+            color:var(--home-muted);
+        }
+
+        .modal-secondary-btn:hover{
+            background:var(--home-soft);
+            color:var(--home-brown);
+        }
+
+        .modal-primary-btn{
+            border:0;
+            background:var(--home-brown);
+            color:#fff;
+        }
+
+        .modal-primary-btn:hover{
+            background:var(--home-orange);
+        }
+
+        .composer-tool.has-value{
+            background:var(--home-linen);
+            color:var(--home-brown);
+        }
+
+        @media(max-width:560px){
+            .composer-modal{
+                align-items:end;
+                padding:0;
+            }
+
+            .composer-modal-dialog,
+            .composer-modal-dialog--small{
+                width:100%;
+                max-height:86vh;
+                border-radius:24px 24px 0 0;
+                border-bottom:0;
+            }
+        }
+
         .composer-meta{display:flex;gap:9px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--home-border)}
         .composer-meta label{display:flex;align-items:center;gap:6px}
         .composer-meta label>span{font-size:10px;color:#9A8780;font-weight:700}
@@ -837,20 +1246,248 @@
             threadBody?.addEventListener('input', syncCounter);
             syncCounter();
 
-            document
-                .querySelectorAll('[data-toggle-extra]')
-                .forEach(button => {
-                    button.addEventListener('click', () => {
-                        const panel =
-                            document.getElementById(
-                                button.dataset.toggleExtra
-                            );
+            /*
+            |--------------------------------------------------------------------------
+            | LINK + POLLING POPUP
+            |--------------------------------------------------------------------------
+            */
+            const composerModals =
+                document.querySelectorAll(
+                    '.composer-modal'
+                );
 
-                        if (panel) {
-                            panel.hidden = !panel.hidden;
-                        }
-                    });
+            const linkInput =
+                document.getElementById(
+                    'composerLinkInput'
+                );
+
+            const pollQuestion =
+                document.getElementById(
+                    'pollQuestionInput'
+                );
+
+            const pollOptions =
+                document.querySelectorAll(
+                    '[data-poll-option]'
+                );
+
+            const linkTool =
+                document.querySelector(
+                    '[data-open-composer-modal="linkModal"]'
+                );
+
+            const pollTool =
+                document.querySelector(
+                    '[data-open-composer-modal="pollModal"]'
+                );
+
+            function syncComposerToolState() {
+                if (linkTool) {
+                    linkTool.classList.toggle(
+                        'has-value',
+                        Boolean(
+                            linkInput?.value.trim()
+                        )
+                    );
+                }
+
+                if (pollTool) {
+                    const hasQuestion =
+                        Boolean(
+                            pollQuestion?.value.trim()
+                        );
+
+                    const filledOptions =
+                        Array.from(pollOptions)
+                            .filter(
+                                input =>
+                                    input.value.trim() !== ''
+                            )
+                            .length;
+
+                    pollTool.classList.toggle(
+                        'has-value',
+                        hasQuestion
+                            && filledOptions >= 2
+                    );
+                }
+            }
+
+            function closeComposerModal(modal) {
+                if (!modal) return;
+
+                modal.hidden = true;
+                modal.setAttribute(
+                    'aria-hidden',
+                    'true'
+                );
+
+                document.body.style.overflow = '';
+
+                syncComposerToolState();
+            }
+
+            function openComposerModal(modal) {
+                if (!modal) return;
+
+                composerModals.forEach(other => {
+                    if (other !== modal) {
+                        other.hidden = true;
+
+                        other.setAttribute(
+                            'aria-hidden',
+                            'true'
+                        );
+                    }
                 });
+
+                modal.hidden = false;
+
+                modal.setAttribute(
+                    'aria-hidden',
+                    'false'
+                );
+
+                document.body.style.overflow =
+                    'hidden';
+
+                requestAnimationFrame(() => {
+                    modal.querySelector('input')
+                        ?.focus();
+                });
+            }
+
+            document
+                .querySelectorAll(
+                    '[data-open-composer-modal]'
+                )
+                .forEach(button => {
+                    button.addEventListener(
+                        'click',
+                        () => {
+                            openComposerModal(
+                                document.getElementById(
+                                    button.dataset
+                                        .openComposerModal
+                                )
+                            );
+                        }
+                    );
+                });
+
+            document
+                .querySelectorAll(
+                    '[data-close-composer-modal]'
+                )
+                .forEach(button => {
+                    button.addEventListener(
+                        'click',
+                        () => {
+                            closeComposerModal(
+                                button.closest(
+                                    '.composer-modal'
+                                )
+                            );
+                        }
+                    );
+                });
+
+            document
+                .querySelectorAll(
+                    '[data-save-composer-modal]'
+                )
+                .forEach(button => {
+                    button.addEventListener(
+                        'click',
+                        () => {
+                            closeComposerModal(
+                                button.closest(
+                                    '.composer-modal'
+                                )
+                            );
+                        }
+                    );
+                });
+
+            document
+                .querySelector('[data-clear-link]')
+                ?.addEventListener(
+                    'click',
+                    () => {
+                        if (linkInput) {
+                            linkInput.value = '';
+                        }
+
+                        closeComposerModal(
+                            document.getElementById(
+                                'linkModal'
+                            )
+                        );
+                    }
+                );
+
+            document
+                .querySelector('[data-clear-poll]')
+                ?.addEventListener(
+                    'click',
+                    () => {
+                        if (pollQuestion) {
+                            pollQuestion.value = '';
+                        }
+
+                        pollOptions.forEach(
+                            input => {
+                                input.value = '';
+                            }
+                        );
+
+                        closeComposerModal(
+                            document.getElementById(
+                                'pollModal'
+                            )
+                        );
+                    }
+                );
+
+            document.addEventListener(
+                'keydown',
+                event => {
+                    if (event.key !== 'Escape') {
+                        return;
+                    }
+
+                    const openModal =
+                        document.querySelector(
+                            '.composer-modal:not([hidden])'
+                        );
+
+                    if (openModal) {
+                        closeComposerModal(
+                            openModal
+                        );
+                    }
+                }
+            );
+
+            linkInput?.addEventListener(
+                'input',
+                syncComposerToolState
+            );
+
+            pollQuestion?.addEventListener(
+                'input',
+                syncComposerToolState
+            );
+
+            pollOptions.forEach(input => {
+                input.addEventListener(
+                    'input',
+                    syncComposerToolState
+                );
+            });
+
+            syncComposerToolState();
+
 
             const preview = document.getElementById('composerPreview');
 
