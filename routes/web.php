@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
+use App\Http\Controllers\PodcastController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ThreadController;
 use Illuminate\Support\Facades\Route;
@@ -14,8 +15,10 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function () {
 
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+
 
     // Threads / Utas
     Route::post('/threads', [ThreadController::class, 'store'])
@@ -39,9 +42,25 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::delete('/threads/{thread}', [ThreadController::class, 'destroy'])
         ->name('threads.destroy');
 
+
     // Explore
     Route::get('/explore', [ArticleController::class, 'explore'])
         ->name('explore');
+
+
+    // Podcast
+    Route::get('/podcast', [PodcastController::class, 'index'])
+        ->name('podcasts.index');
+
+    Route::get('/podcast/create', [PodcastController::class, 'create'])
+        ->name('podcasts.create');
+
+    Route::post('/podcast', [PodcastController::class, 'store'])
+        ->name('podcasts.store');
+
+    Route::get('/podcast/{podcast}', [PodcastController::class, 'show'])
+        ->name('podcasts.show');
+
 
     // Articles
     Route::get('/my-articles', [ArticleController::class, 'manage'])
@@ -83,6 +102,7 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::post('/users/{user}/follow', [InteractionController::class, 'follow'])
         ->name('users.follow');
 
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
@@ -94,13 +114,28 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
         ->name('profile.destroy');
 });
 
-// Admin routes (guard admin, terpisah dari guard web)
-Route::middleware(['auth:admin', 'prevent-back-history'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard_admin');
-    Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
-    Route::post('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])->name('reports.resolve');
-    Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::post('/logout', [AdminController::class, 'logout'])->name('logout');
-});
+
+// Admin routes
+Route::middleware(['auth:admin', 'prevent-back-history'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::get('/dashboard', [AdminController::class, 'dashboard'])
+            ->name('dashboard_admin');
+
+        Route::get('/reports', [AdminController::class, 'reports'])
+            ->name('reports');
+
+        Route::post('/reports/{report}/resolve', [AdminController::class, 'resolveReport'])
+            ->name('reports.resolve');
+
+        Route::get('/users', [AdminController::class, 'users'])
+            ->name('users');
+
+        Route::post('/logout', [AdminController::class, 'logout'])
+            ->name('logout');
+    });
+
 
 require __DIR__.'/auth.php';
