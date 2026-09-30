@@ -622,7 +622,7 @@
                                         </div>
 
                                         <div class="feed-article-cover">
-                                            @if($article->cover_image)
+                                            @if($article->cover_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($article->cover_image))
                                                 <img
                                                     src="{{ asset('storage/' . $article->cover_image) }}"
                                                     alt="{{ $article->title }}"

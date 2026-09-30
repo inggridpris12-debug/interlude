@@ -20,7 +20,7 @@
     $px = is_numeric($size) ? (int) $size : 40;
 @endphp
 
-@if(!empty($user->profile_photo))
+@if(!empty($user->profile_photo) && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile_photo))
     <img
         src="{{ asset('storage/' . $user->profile_photo) }}"
         alt="Foto profil {{ $user->name }}"

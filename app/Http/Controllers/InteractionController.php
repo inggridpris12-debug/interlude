@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\User;
+use App\Notifications\InteractionNotification;
 use Illuminate\Http\Request;
 
 class InteractionController extends Controller
@@ -18,6 +19,14 @@ class InteractionController extends Controller
         } else {
             $article->likes()->create(['user_id' => $user->id]);
             $liked = true;
+
+            if ($article->user_id !== $user->id) {
+                $article->user->notify(new InteractionNotification(
+                    'like',
+                    $user->name.' menyukai artikelmu.',
+                    route('articles.show', $article->slug),
+                ));
+            }
         }
 
         return response()->json([
@@ -56,6 +65,14 @@ class InteractionController extends Controller
             'content' => $validated['content'],
         ]);
 
+        if ($article->user_id !== auth()->id()) {
+            $article->user->notify(new InteractionNotification(
+                'comment',
+                auth()->user()->name.' mengomentari artikelmu.',
+                route('articles.show', $article->slug),
+            ));
+        }
+
         return redirect()
             ->route('articles.show', $article->slug)
             ->with('success', 'Komentar berhasil ditambahkan.');
@@ -78,6 +95,12 @@ class InteractionController extends Controller
         } else {
             $follower->following()->attach($user->id);
             $following = true;
+
+            $user->notify(new InteractionNotification(
+                'follow',
+                $follower->name.' mulai mengikutimu.',
+                route('users.show', $follower),
+            ));
         }
 
         return response()->json([

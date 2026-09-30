@@ -1,4 +1,10 @@
 <x-app-layout>
+    @php
+        $hasExistingCover = isset($article)
+            && $article->cover_image
+            && \Illuminate\Support\Facades\Storage::disk('public')->exists($article->cover_image);
+    @endphp
+
     <div class="write-container">
         <div class="write-header">
             <div class="write-brand">
@@ -226,7 +232,7 @@
                             <div
                                 class="upload-placeholder"
                                 id="uploadPlaceholder"
-                                style="display: {{ isset($article) && $article->cover_image ? 'none' : 'flex' }};"
+                                style="display: {{ $hasExistingCover ? 'none' : 'flex' }};"
                             >
                                 <span class="upload-icon"><i class="far fa-image"></i></span>
                                 <strong>Pilih gambar sampul</strong>
@@ -236,12 +242,12 @@
                             <img
                                 id="imagePreview"
                                 class="image-preview"
-                                src="{{ isset($article) && $article->cover_image ? asset('storage/' . $article->cover_image) : '' }}"
+                                src="{{ $hasExistingCover ? asset('storage/' . $article->cover_image) : '' }}"
                                 alt="Preview gambar sampul"
-                                style="display: {{ isset($article) && $article->cover_image ? 'block' : 'none' }};"
+                                style="display: {{ $hasExistingCover ? 'block' : 'none' }};"
                             >
 
-                            <span class="cover-change" id="coverChange" style="display: {{ isset($article) && $article->cover_image ? 'inline-flex' : 'none' }};">
+                            <span class="cover-change" id="coverChange" style="display: {{ $hasExistingCover ? 'inline-flex' : 'none' }};">
                                 <i class="fas fa-camera"></i>
                                 Ganti
                             </span>

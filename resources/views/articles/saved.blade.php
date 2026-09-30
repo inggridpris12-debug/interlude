@@ -20,7 +20,7 @@
                     @if($article)
                         <article class="saved-item">
                             <div class="saved-cover">
-                                @if($article->cover_image)
+                                @if($article->cover_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($article->cover_image))
                                     <img src="{{ asset('storage/' . $article->cover_image) }}" alt="{{ $article->title }}">
                                 @else
                                     <span><i class="fas fa-book-open"></i></span>

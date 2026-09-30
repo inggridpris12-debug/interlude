@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PodcastController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ThreadController;
@@ -19,6 +21,20 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/messages', [MessageController::class, 'index'])
+        ->name('messages.index');
+
+    Route::post('/messages', [MessageController::class, 'store'])
+        ->name('messages.store');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::patch('/notifications/{notification}/read', [NotificationController::class, 'read'])
+        ->name('notifications.read');
+
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])
+        ->name('notifications.read-all');
 
     // Threads / Utas
     Route::post('/threads', [ThreadController::class, 'store'])
@@ -42,11 +58,9 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::delete('/threads/{thread}', [ThreadController::class, 'destroy'])
         ->name('threads.destroy');
 
-
     // Explore
     Route::get('/explore', [ArticleController::class, 'explore'])
         ->name('explore');
-
 
     // Podcast
     Route::get('/podcast', [PodcastController::class, 'index'])
@@ -69,7 +83,6 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
 
     Route::post('/podcast/{podcast}/comments', [PodcastController::class, 'comment'])
         ->name('podcasts.comments.store');
-
 
     // Articles
     Route::get('/my-articles', [ArticleController::class, 'manage'])
@@ -108,14 +121,12 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::post('/articles/{article}/comments', [InteractionController::class, 'comment'])
         ->name('articles.comments.store');
 
-
     // Public User Profile + Follow
     Route::get('/users/{user}', [ProfileController::class, 'show'])
         ->name('users.show');
 
     Route::post('/users/{user}/follow', [InteractionController::class, 'follow'])
         ->name('users.follow');
-
 
     // Profile milik sendiri / edit
     Route::get('/profile', [ProfileController::class, 'edit'])
@@ -143,7 +154,6 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
         ->name('profile.destroy');
 });
 
-
 // Admin routes
 Route::middleware(['auth:admin', 'prevent-back-history'])
     ->prefix('admin')
@@ -165,6 +175,5 @@ Route::middleware(['auth:admin', 'prevent-back-history'])
         Route::post('/logout', [AdminController::class, 'logout'])
             ->name('logout');
     });
-
 
 require __DIR__.'/auth.php';

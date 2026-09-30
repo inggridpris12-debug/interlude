@@ -675,7 +675,7 @@
 
 
 
-                                @if($article->cover_image)
+                                @if($article->cover_image && \Illuminate\Support\Facades\Storage::disk('public')->exists($article->cover_image))
 
 
 

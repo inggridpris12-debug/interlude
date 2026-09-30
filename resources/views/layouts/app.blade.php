@@ -755,13 +755,14 @@
             <button
                 type="button"
                 class="nav-icon-btn notification-button"
+                onclick="window.location.href='{{ route('notifications.index') }}'"
                 aria-label="Notifikasi"
                 title="Notifikasi"
             >
                 <i class="far fa-bell"></i>
-
-                {{-- Hapus span ini kalau nanti belum punya sistem unread notification --}}
-                <span class="notification-dot"></span>
+                @if(Auth::user()->unreadNotifications()->exists())
+                    <span class="notification-dot"></span>
+                @endif
             </button>
 
             <!-- Tulis cerita -->
