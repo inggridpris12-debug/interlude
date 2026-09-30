@@ -64,9 +64,7 @@
                 <section class="thread-composer">
                     <div class="composer-row">
 
-                        <div class="composer-avatar">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                        </div>
+                        <x-user-avatar :user="Auth::user()" :size="44" class="composer-avatar" />
 
                         <form
                             method="POST"
@@ -476,9 +474,7 @@
                                     <div class="thread-card-top">
 
                                         <div class="thread-author">
-                                            <div class="feed-avatar">
-                                                {{ strtoupper(substr($thread->user->name, 0, 1)) }}
-                                            </div>
+                                            <x-user-avatar :user="$thread->user" :size="42" class="feed-avatar" />
 
                                             <div>
                                                 <strong>{{ $thread->user->name }}</strong>
@@ -596,9 +592,7 @@
                                         <div class="feed-article-copy">
 
                                             <div class="article-byline">
-                                                <div class="feed-avatar feed-avatar--small">
-                                                    {{ strtoupper(substr($article->user->name, 0, 1)) }}
-                                                </div>
+                                                <x-user-avatar :user="$article->user" :size="34" class="feed-avatar feed-avatar--small" />
 
                                                 <div>
                                                     <strong>{{ $article->user->name }}</strong>
@@ -680,9 +674,7 @@
 
                                         <div class="feed-podcast-copy">
                                             <div class="article-byline">
-                                                <div class="feed-avatar feed-avatar--small">
-                                                    {{ strtoupper(substr($podcast->user->name, 0, 1)) }}
-                                                </div>
+                                                <x-user-avatar :user="$podcast->user" :size="34" class="feed-avatar feed-avatar--small" />
 
                                                 <div>
                                                     <strong>{{ $podcast->user->name }}</strong>
@@ -751,7 +743,7 @@
                         @forelse($recommendedWriters as $writer)
                             <div class="person-row">
                                 <a href="{{ route('users.show', $writer) }}" class="person-main" aria-label="Lihat profil {{ $writer->name }}">
-                                    <div class="writer-avatar">{{ strtoupper(substr($writer->name, 0, 1)) }}</div>
+                                    <x-user-avatar :user="$writer" :size="42" class="writer-avatar" />
                                     <div class="person-copy">
                                         <strong>{{ $writer->name }}</strong>
                                         <span>{{ ($writer->published_articles_count ?? 0) + ($writer->published_podcasts_count ?? 0) }} karya</span>
@@ -779,7 +771,7 @@
                         @forelse($friendCandidates as $friend)
                             <div class="person-row">
                                 <a href="{{ route('users.show', $friend) }}" class="person-main" aria-label="Lihat profil {{ $friend->name }}">
-                                    <div class="writer-avatar friend-avatar">{{ strtoupper(substr($friend->name, 0, 1)) }}</div>
+                                    <x-user-avatar :user="$friend" :size="42" class="writer-avatar friend-avatar" />
                                     <div class="person-copy">
                                         <strong>{{ $friend->name }}</strong>
                                         <span>
@@ -839,6 +831,126 @@
 
             </aside>
         </div>
+
+
+        @if(isset($recentHistory) && $recentHistory->isNotEmpty())
+            @php
+                $latestHistory = $recentHistory->first();
+                $latestItem = $latestHistory['item'];
+                $latestType = $latestHistory['type'];
+
+                $latestUrl = $latestType === 'podcast'
+                    ? route('podcasts.show', $latestItem)
+                    : route('articles.show', $latestItem->slug);
+
+                $latestMediaLabel = $latestType === 'podcast'
+                    ? ($latestItem->media_type === 'video' ? 'Video Podcast' : 'Audio Podcast')
+                    : 'Artikel';
+
+                $latestActionLabel = $latestType === 'podcast'
+                    ? ($latestItem->media_type === 'video' ? 'Tonton lagi' : 'Dengarkan lagi')
+                    : 'Baca lagi';
+
+                $latestImage = $latestType === 'podcast'
+                    ? ($latestItem->thumbnail_image ?: $latestItem->cover_image)
+                    : $latestItem->cover_image;
+            @endphp
+
+            <aside class="history-floating" id="historyFloating" aria-label="Riwayat konten terakhir">
+                <div class="history-summary">
+                    <div class="history-summary-main">
+                        <div class="history-cover">
+                            @if($latestImage)
+                                <img src="{{ asset('storage/' . $latestImage) }}" alt="{{ $latestItem->title }}">
+                            @else
+                                <span class="history-cover-icon">
+                                    <i class="{{ $latestType === 'podcast' ? ($latestItem->media_type === 'video' ? 'fas fa-video' : 'fas fa-headphones') : 'far fa-file-lines' }}"></i>
+                                </span>
+                            @endif
+                        </div>
+
+                        <div class="history-summary-copy">
+                            <span class="history-kicker">Terakhir kamu buka</span>
+                            <strong>{{ \Illuminate\Support\Str::limit($latestItem->title, 46) }}</strong>
+                            <span>{{ $latestMediaLabel }} · {{ optional($latestHistory['viewed_at'])->locale('id')->diffForHumans() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="history-summary-actions">
+                        <a href="{{ $latestUrl }}" class="history-resume-btn">
+                            {{ $latestActionLabel }}
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+
+                        <button
+                            type="button"
+                            class="history-expand-btn"
+                            id="historyExpandButton"
+                            aria-controls="historyPanel"
+                            aria-expanded="false"
+                            title="Lihat riwayat terbaru"
+                        >
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="history-panel" id="historyPanel" hidden>
+                    <div class="history-panel-head">
+                        <div>
+                            <span>Aktivitas terbaru</span>
+                            <h3>Riwayatmu</h3>
+                        </div>
+
+                        <button type="button" id="historyCloseButton" aria-label="Tutup riwayat">
+                            <i class="fas fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <div class="history-list">
+                        @foreach($recentHistory as $historyEntry)
+                            @php
+                                $historyItem = $historyEntry['item'];
+                                $historyType = $historyEntry['type'];
+
+                                $historyUrl = $historyType === 'podcast'
+                                    ? route('podcasts.show', $historyItem)
+                                    : route('articles.show', $historyItem->slug);
+
+                                $historyLabel = $historyType === 'podcast'
+                                    ? ($historyItem->media_type === 'video' ? 'Video Podcast' : 'Audio Podcast')
+                                    : 'Artikel';
+
+                                $historyImage = $historyType === 'podcast'
+                                    ? ($historyItem->thumbnail_image ?: $historyItem->cover_image)
+                                    : $historyItem->cover_image;
+                            @endphp
+
+                            <a href="{{ $historyUrl }}" class="history-list-item">
+                                <div class="history-list-cover">
+                                    @if($historyImage)
+                                        <img src="{{ asset('storage/' . $historyImage) }}" alt="{{ $historyItem->title }}">
+                                    @else
+                                        <span>
+                                            <i class="{{ $historyType === 'podcast' ? ($historyItem->media_type === 'video' ? 'fas fa-video' : 'fas fa-headphones') : 'far fa-file-lines' }}"></i>
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="history-list-copy">
+                                    <span>{{ $historyLabel }}</span>
+                                    <strong>{{ \Illuminate\Support\Str::limit($historyItem->title, 52) }}</strong>
+                                    <small>{{ optional($historyEntry['viewed_at'])->locale('id')->diffForHumans() }}</small>
+                                </div>
+
+                                <i class="fas fa-arrow-up-right-from-square history-list-arrow"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </aside>
+        @endif
+
     </main>
 
 
@@ -1350,6 +1462,268 @@
             .feed-podcast-format{left:6px;bottom:6px;padding:5px 7px;font-size:7px}
             .home-sidebar{grid-template-columns:1fr}
         }
+
+
+        /* =========================================================
+           FLOATING RIWAYAT TERAKHIR
+        ========================================================= */
+        .history-floating{
+            position:fixed;
+            right:24px;
+            bottom:22px;
+            z-index:3500;
+            width:min(390px,calc(100vw - 32px));
+            font-family:'DM Sans',sans-serif;
+        }
+
+        .history-summary,
+        .history-panel{
+            border:1px solid rgba(73,38,29,.14);
+            background:rgba(255,255,255,.97);
+            box-shadow:0 20px 55px rgba(73,38,29,.18);
+            backdrop-filter:blur(16px);
+            -webkit-backdrop-filter:blur(16px);
+        }
+
+        .history-summary{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:12px;
+            border-radius:22px;
+        }
+
+        .history-summary-main{
+            min-width:0;
+            display:flex;
+            align-items:center;
+            gap:11px;
+        }
+
+        .history-cover,
+        .history-list-cover{
+            overflow:hidden;
+            flex:0 0 auto;
+            background:linear-gradient(135deg,var(--home-blue),var(--home-linen));
+            color:var(--home-brown);
+        }
+
+        .history-cover{
+            width:50px;
+            height:50px;
+            border-radius:15px;
+        }
+
+        .history-cover img,
+        .history-list-cover img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+        }
+
+        .history-cover-icon,
+        .history-list-cover>span{
+            width:100%;
+            height:100%;
+            display:grid;
+            place-items:center;
+        }
+
+        .history-cover-icon{font-size:17px}
+
+        .history-summary-copy{
+            min-width:0;
+            display:flex;
+            flex-direction:column;
+            gap:2px;
+        }
+
+        .history-kicker{
+            color:var(--home-orange)!important;
+            font:800 9px/1.2 'Plus Jakarta Sans',sans-serif!important;
+            letter-spacing:.09em;
+            text-transform:uppercase;
+        }
+
+        .history-summary-copy strong{
+            max-width:180px;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+            color:var(--home-brown);
+            font:800 12px/1.35 'Plus Jakarta Sans',sans-serif;
+        }
+
+        .history-summary-copy>span:last-child{
+            color:var(--home-muted);
+            font-size:9px;
+        }
+
+        .history-summary-actions{
+            flex:0 0 auto;
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+
+        .history-resume-btn{
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            padding:9px 11px;
+            border-radius:999px;
+            background:var(--home-brown);
+            color:#fff;
+            text-decoration:none;
+            font:800 9px 'Plus Jakarta Sans',sans-serif;
+            transition:.2s ease;
+        }
+
+        .history-resume-btn:hover{
+            background:var(--home-orange);
+            transform:translateY(-1px);
+        }
+
+        .history-expand-btn,
+        .history-panel-head button{
+            display:grid;
+            place-items:center;
+            border:0;
+            cursor:pointer;
+        }
+
+        .history-expand-btn{
+            width:34px;
+            height:34px;
+            border-radius:50%;
+            background:var(--home-soft);
+            color:var(--home-brown);
+            transition:.2s ease;
+        }
+
+        .history-expand-btn:hover{background:var(--home-blue)}
+        .history-expand-btn i{transition:transform .2s ease}
+        .history-expand-btn.is-open i{transform:rotate(180deg)}
+
+        .history-panel{
+            margin-bottom:10px;
+            border-radius:24px;
+            overflow:hidden;
+            transform-origin:bottom right;
+            animation:historyPanelIn .16s ease-out;
+        }
+
+        .history-panel[hidden]{display:none!important}
+
+        @keyframes historyPanelIn{
+            from{opacity:0;transform:translateY(8px) scale(.985)}
+            to{opacity:1;transform:translateY(0) scale(1)}
+        }
+
+        .history-panel-head{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:18px 18px 13px;
+            border-bottom:1px solid var(--home-border);
+            background:linear-gradient(135deg,#fff,var(--home-cream));
+        }
+
+        .history-panel-head span{
+            display:block;
+            margin-bottom:3px;
+            color:var(--home-orange);
+            font:800 9px 'Plus Jakarta Sans',sans-serif;
+            letter-spacing:.09em;
+            text-transform:uppercase;
+        }
+
+        .history-panel-head h3{
+            margin:0;
+            color:var(--home-brown);
+            font:800 17px 'Plus Jakarta Sans',sans-serif;
+        }
+
+        .history-panel-head button{
+            width:34px;
+            height:34px;
+            border-radius:50%;
+            background:var(--home-soft);
+            color:var(--home-brown);
+        }
+
+        .history-list{
+            max-height:360px;
+            overflow:auto;
+            padding:7px 10px 10px;
+        }
+
+        .history-list-item{
+            display:grid;
+            grid-template-columns:44px minmax(0,1fr) auto;
+            align-items:center;
+            gap:10px;
+            padding:10px 8px;
+            border-radius:16px;
+            color:inherit;
+            text-decoration:none;
+            transition:.18s ease;
+        }
+
+        .history-list-item:hover{background:var(--home-soft)}
+
+        .history-list-cover{
+            width:44px;
+            height:44px;
+            border-radius:13px;
+        }
+
+        .history-list-copy{
+            min-width:0;
+            display:flex;
+            flex-direction:column;
+            gap:2px;
+        }
+
+        .history-list-copy>span{
+            color:var(--home-orange);
+            font:800 8px 'Plus Jakarta Sans',sans-serif;
+            letter-spacing:.06em;
+            text-transform:uppercase;
+        }
+
+        .history-list-copy strong{
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+            color:var(--home-brown);
+            font:700 11px/1.35 'Plus Jakarta Sans',sans-serif;
+        }
+
+        .history-list-copy small{
+            color:var(--home-muted);
+            font-size:9px;
+        }
+
+        .history-list-arrow{
+            color:#B7A59E;
+            font-size:11px;
+        }
+
+        @media(max-width:640px){
+            .history-floating{
+                right:12px;
+                bottom:12px;
+                width:calc(100vw - 24px);
+            }
+
+            .history-summary-copy strong{max-width:140px}
+            .history-resume-btn{padding:9px;font-size:0}
+            .history-resume-btn i{font-size:11px}
+        }
+
     </style>
 
 
@@ -1792,6 +2166,47 @@
                     }
                 };
         });
+
+
+        // =========================================================
+        // FLOATING HISTORY
+        // =========================================================
+        const historyFloating = document.getElementById('historyFloating');
+        const historyPanel = document.getElementById('historyPanel');
+        const historyExpandButton = document.getElementById('historyExpandButton');
+        const historyCloseButton = document.getElementById('historyCloseButton');
+
+        function setHistoryPanel(open) {
+            if (!historyPanel || !historyExpandButton) return;
+
+            historyPanel.hidden = !open;
+            historyExpandButton.classList.toggle('is-open', open);
+            historyExpandButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        if (historyExpandButton) {
+            historyExpandButton.addEventListener('click', function () {
+                setHistoryPanel(historyPanel?.hidden ?? true);
+            });
+        }
+
+        if (historyCloseButton) {
+            historyCloseButton.addEventListener('click', function () {
+                setHistoryPanel(false);
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            if (
+                historyFloating
+                && historyPanel
+                && !historyPanel.hidden
+                && !historyFloating.contains(event.target)
+            ) {
+                setHistoryPanel(false);
+            }
+        });
+
     </script>
 
 </x-app-layout>

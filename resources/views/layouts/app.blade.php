@@ -378,34 +378,121 @@
             position: absolute;
             top: calc(100% + 12px);
             right: 0;
-            min-width: 235px;
-            padding: 9px;
+            width: 286px;
+            padding: 10px;
             display: none;
             border: 1px solid var(--border);
-            border-radius: 18px;
+            border-radius: 20px;
             background: var(--white);
-            box-shadow: 0 18px 48px rgba(73, 38, 29, 0.14);
+            box-shadow: 0 20px 52px rgba(73, 38, 29, 0.16);
             z-index: 1200;
         }
 
         .dropdown-menu.show {
             display: block;
+            animation: dropdownAppear .16s ease-out;
+        }
+
+        @keyframes dropdownAppear {
+            from {
+                opacity: 0;
+                transform: translateY(-5px) scale(.985);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .dropdown-profile {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr);
+            align-items: center;
+            gap: 11px;
+            padding: 10px 10px 12px;
+            color: var(--brown);
+            text-decoration: none;
+            border-radius: 14px;
+            transition: .2s ease;
+        }
+
+        .dropdown-profile:hover {
+            background: var(--cream);
+        }
+
+        .dropdown-profile-avatar {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--blue);
+            color: var(--brown);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .dropdown-profile-copy {
+            min-width: 0;
+        }
+
+        .dropdown-profile-copy strong,
+        .dropdown-profile-copy span {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dropdown-profile-copy strong {
+            margin-bottom: 2px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            line-height: 1.3;
+        }
+
+        .dropdown-profile-copy span {
+            color: var(--text-soft);
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .dropdown-section-label {
+            padding: 7px 13px 5px;
+            color: #A28E87;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .11em;
+            text-transform: uppercase;
         }
 
         .dropdown-item {
             width: 100%;
-            padding: 12px 13px;
+            min-height: 42px;
+            padding: 10px 12px;
             display: flex;
             align-items: center;
+            gap: 11px;
             border: none;
-            border-radius: 11px;
+            border-radius: 12px;
             background: transparent;
             color: var(--brown);
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 650;
             text-align: left;
             text-decoration: none;
             cursor: pointer;
+            transition: .2s;
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            flex: 0 0 20px;
+            text-align: center;
+            font-size: 15px;
+            color: #765B53;
             transition: .2s;
         }
 
@@ -414,9 +501,22 @@
             background: var(--linen);
         }
 
+        .dropdown-item:hover i {
+            color: var(--tangelo);
+        }
+
+        .dropdown-item.logout-item:hover {
+            color: #B42318;
+            background: #FFF1EF;
+        }
+
+        .dropdown-item.logout-item:hover i {
+            color: #B42318;
+        }
+
         .dropdown-divider {
             height: 1px;
-            margin: 7px 0;
+            margin: 7px 4px;
             background: var(--border);
         }
 
@@ -694,9 +794,7 @@
                     aria-expanded="false"
                     id="userMenuButton"
                 >
-                    <div class="user-avatar">
-                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                    </div>
+                    <x-user-avatar :user="Auth::user()" :size="36" class="user-avatar" />
 
                     <span class="user-name">
                         {{ Auth::user()->name }}
@@ -709,28 +807,65 @@
                 </button>
 
                 <div class="dropdown-menu" id="userDropdown">
-                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
-                        <i class="far fa-user" style="width: 24px;"></i>
+                    <a
+                        href="{{ Route::has('users.show') ? route('users.show', Auth::user()) : route('profile.edit') }}"
+                        class="dropdown-profile"
+                    >
+                        <x-user-avatar :user="Auth::user()" :size="44" class="dropdown-profile-avatar" />
+
+                        <div class="dropdown-profile-copy">
+                            <strong>{{ Auth::user()->name }}</strong>
+                            <span>{{ Auth::user()->email }}</span>
+                        </div>
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <div class="dropdown-section-label">Akun</div>
+
+                    <a
+                        href="{{ Route::has('users.show') ? route('users.show', Auth::user()) : route('profile.edit') }}"
+                        class="dropdown-item"
+                    >
+                        <i class="far fa-user"></i>
                         Profil
                     </a>
 
-                    <a href="{{ route('articles.saved') }}" class="dropdown-item">
-                        <i class="far fa-bookmark" style="width: 24px;"></i>
-                        Artikel Tersimpan
+                    <a
+                        href="{{ route('explore', ['section' => 'tersimpan']) }}"
+                        class="dropdown-item"
+                    >
+                        <i class="far fa-bookmark"></i>
+                        Tersimpan
+                    </a>
+
+                    <a
+                        href="{{ route('explore', ['section' => 'riwayat']) }}"
+                        class="dropdown-item"
+                    >
+                        <i class="far fa-clock"></i>
+                        Riwayat
                     </a>
 
                     <a href="{{ route('articles.manage') }}" class="dropdown-item">
-                        <i class="far fa-pen-to-square" style="width: 24px;"></i>
+                        <i class="far fa-pen-to-square"></i>
                         Kelola Karya
                     </a>
 
                     <div class="dropdown-divider"></div>
 
+                    <div class="dropdown-section-label">Preferensi</div>
+
+                    <a href="{{ route('profile.edit') }}" class="dropdown-item">
+                        <i class="fas fa-gear"></i>
+                        Pengaturan
+                    </a>
+
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
 
-                        <button type="submit" class="dropdown-item">
-                            <i class="fas fa-arrow-right-from-bracket" style="width: 24px;"></i>
+                        <button type="submit" class="dropdown-item logout-item">
+                            <i class="fas fa-arrow-right-from-bracket"></i>
                             Logout
                         </button>
                     </form>

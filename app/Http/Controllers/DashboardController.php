@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use App\Models\ArticleView;
 use App\Models\Podcast;
+use App\Models\PodcastView;
 use App\Models\Thread;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -150,6 +151,63 @@ class DashboardController extends Controller
             ->take(5)
             ->values();
 
+        /*
+        |------------------------------------------------------------------
+        | RIWAYAT TERBARU USER
+        |------------------------------------------------------------------
+        | Artikel mengambil data dari article_views. Podcast mengambil data
+        | dari podcast_views. Keduanya digabung lalu diurutkan berdasarkan
+        | waktu terakhir dibuka.
+        */
+        $articleHistory = collect();
+        $podcastHistory = collect();
+
+        if (Schema::hasTable('article_views')) {
+            $articleHistory = ArticleView::query()
+                ->with(['article.user'])
+                ->where('user_id', $user->id)
+                ->whereNotNull('last_viewed_at')
+                ->whereHas('article', function ($query) {
+                    $query->where('is_published', true);
+                })
+                ->latest('last_viewed_at')
+                ->take(5)
+                ->get()
+                ->filter(fn ($view) => $view->article)
+                ->map(fn ($view) => [
+                    'type' => 'article',
+                    'item' => $view->article,
+                    'viewed_at' => $view->last_viewed_at,
+                ]);
+        }
+
+        if (Schema::hasTable('podcast_views')) {
+            $podcastHistory = PodcastView::query()
+                ->with(['podcast.user'])
+                ->where('user_id', $user->id)
+                ->whereNotNull('last_viewed_at')
+                ->whereHas('podcast', function ($query) {
+                    $query->where('is_published', true)
+                        ->whereNotNull('published_at')
+                        ->where('published_at', '<=', now());
+                })
+                ->latest('last_viewed_at')
+                ->take(5)
+                ->get()
+                ->filter(fn ($view) => $view->podcast)
+                ->map(fn ($view) => [
+                    'type' => 'podcast',
+                    'item' => $view->podcast,
+                    'viewed_at' => $view->last_viewed_at,
+                ]);
+        }
+
+        $recentHistory = $articleHistory
+            ->concat($podcastHistory)
+            ->sortByDesc(fn ($entry) => $entry['viewed_at']?->timestamp ?? 0)
+            ->take(5)
+            ->values();
+
         $feedItems = $this->buildFeed(
             feed: $feed,
             userId: $user->id,
@@ -162,6 +220,7 @@ class DashboardController extends Controller
             'recommendedWriters',
             'friendCandidates',
             'trendingContent',
+            'recentHistory',
             'categories'
         ));
     }

@@ -124,6 +124,21 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::patch('/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
 
+    Route::patch('/profile/details', [ProfileController::class, 'updateDetails'])
+        ->name('profile.details.update');
+
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])
+        ->name('profile.avatar.update');
+
+    Route::delete('/profile/avatar', [ProfileController::class, 'removeAvatar'])
+        ->name('profile.avatar.remove');
+
+    Route::post('/profile/cover', [ProfileController::class, 'updateCover'])
+        ->name('profile.cover.update');
+
+    Route::delete('/profile/cover', [ProfileController::class, 'removeCover'])
+        ->name('profile.cover.remove');
+
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 });
