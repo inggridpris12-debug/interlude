@@ -61,6 +61,15 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::get('/podcast/{podcast}', [PodcastController::class, 'show'])
         ->name('podcasts.show');
 
+    Route::post('/podcast/{podcast}/like', [PodcastController::class, 'like'])
+        ->name('podcasts.like');
+
+    Route::post('/podcast/{podcast}/bookmark', [PodcastController::class, 'bookmark'])
+        ->name('podcasts.bookmark');
+
+    Route::post('/podcast/{podcast}/comments', [PodcastController::class, 'comment'])
+        ->name('podcasts.comments.store');
+
 
     // Articles
     Route::get('/my-articles', [ArticleController::class, 'manage'])
@@ -99,11 +108,16 @@ Route::middleware(['auth', 'verified', 'prevent-back-history'])->group(function 
     Route::post('/articles/{article}/comments', [InteractionController::class, 'comment'])
         ->name('articles.comments.store');
 
+
+    // Public User Profile + Follow
+    Route::get('/users/{user}', [ProfileController::class, 'show'])
+        ->name('users.show');
+
     Route::post('/users/{user}/follow', [InteractionController::class, 'follow'])
         ->name('users.follow');
 
 
-    // Profile
+    // Profile milik sendiri / edit
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 

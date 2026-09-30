@@ -647,6 +647,69 @@
                                     </article>
                                 </a>
 
+                            @elseif($feedItem['type'] === 'podcast')
+
+                                @php
+                                    $podcast = $feedItem['item'];
+                                    $podcastVisual = $podcast->thumbnail_image ?: $podcast->cover_image;
+                                @endphp
+
+                                <a
+                                    href="{{ route('podcasts.show', $podcast) }}"
+                                    class="feed-podcast-link"
+                                >
+                                    <article class="feed-podcast-card">
+
+                                        <div class="feed-podcast-visual">
+                                            @if($podcastVisual)
+                                                <img
+                                                    src="{{ asset('storage/' . $podcastVisual) }}"
+                                                    alt="{{ $podcast->title }}"
+                                                >
+                                            @else
+                                                <div class="feed-podcast-placeholder">
+                                                    <i class="fas {{ $podcast->media_type === 'video' ? 'fa-video' : 'fa-microphone' }}"></i>
+                                                </div>
+                                            @endif
+
+                                            <span class="feed-podcast-format">
+                                                <i class="fas {{ $podcast->media_type === 'video' ? 'fa-video' : 'fa-headphones' }}"></i>
+                                                {{ $podcast->media_type === 'video' ? 'Video Podcast' : 'Audio Podcast' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="feed-podcast-copy">
+                                            <div class="article-byline">
+                                                <div class="feed-avatar feed-avatar--small">
+                                                    {{ strtoupper(substr($podcast->user->name, 0, 1)) }}
+                                                </div>
+
+                                                <div>
+                                                    <strong>{{ $podcast->user->name }}</strong>
+                                                    <span>{{ optional($podcast->published_at)->locale('id')->diffForHumans() }}</span>
+                                                </div>
+                                            </div>
+
+                                            <span class="article-type podcast-type">
+                                                Podcast · {{ $podcast->category ?: 'Umum' }}
+                                            </span>
+
+                                            <h2>{{ $podcast->title }}</h2>
+
+                                            @if($podcast->description)
+                                                <p>{{ Str::limit(strip_tags($podcast->description), 170) }}</p>
+                                            @endif
+
+                                            <div class="feed-podcast-meta">
+                                                <span>◉ {{ number_format($podcast->views_count ?? 0) }}</span>
+                                                <span>♡ {{ $podcast->likes_count ?? 0 }}</span>
+                                                <span>💬 {{ $podcast->comments_count ?? 0 }}</span>
+                                            </div>
+                                        </div>
+
+                                    </article>
+                                </a>
+
                             @endif
 
                         @empty
@@ -654,13 +717,13 @@
                             <div class="feed-empty">
                                 <h2>
                                     {{ $feed === 'podcast'
-                                        ? 'Feed podcast belum tersedia.'
+                                        ? 'Belum ada podcast yang dipublikasikan.'
                                         : 'Belum ada konten di sini.' }}
                                 </h2>
 
                                 <p>
                                     {{ $feed === 'podcast'
-                                        ? 'Backend podcast belum tersambung ke Beranda.'
+                                        ? 'Podcast baru akan muncul di sini setelah dipublikasikan.'
                                         : 'Mulai berbagi utas atau ikuti penulis lain.' }}
                                 </p>
                             </div>
@@ -675,6 +738,7 @@
             {{-- SIDEBAR --}}
             <aside class="home-sidebar">
 
+                {{-- Penulis untukmu --}}
                 <section class="sidebar-card">
                     <div class="sidebar-heading">
                         <div>
@@ -685,25 +749,16 @@
 
                     <div class="writer-list">
                         @forelse($recommendedWriters as $writer)
-                            <div class="writer-row">
-                                <div class="writer-info">
-                                    <div class="writer-avatar">
-                                        {{ strtoupper(substr($writer->name, 0, 1)) }}
-                                    </div>
-
-                                    <div>
+                            <div class="person-row">
+                                <a href="{{ route('users.show', $writer) }}" class="person-main" aria-label="Lihat profil {{ $writer->name }}">
+                                    <div class="writer-avatar">{{ strtoupper(substr($writer->name, 0, 1)) }}</div>
+                                    <div class="person-copy">
                                         <strong>{{ $writer->name }}</strong>
-                                        <span>{{ $writer->articles_count }} artikel</span>
+                                        <span>{{ ($writer->published_articles_count ?? 0) + ($writer->published_podcasts_count ?? 0) }} karya</span>
                                     </div>
-                                </div>
+                                </a>
 
-                                <button
-                                    type="button"
-                                    class="follow-btn"
-                                    onclick="toggleFollow({{ $writer->id }}, this)"
-                                >
-                                    Ikuti
-                                </button>
+                                <button type="button" class="follow-btn" data-url="{{ route('users.follow', $writer) }}" onclick="toggleFollow(this.dataset.url, this)">Ikuti</button>
                             </div>
                         @empty
                             <p class="sidebar-empty">Belum ada rekomendasi penulis.</p>
@@ -711,32 +766,73 @@
                     </div>
                 </section>
 
-
+                {{-- Teman untukmu --}}
                 <section class="sidebar-card">
                     <div class="sidebar-heading">
                         <div>
+                            <span>Mungkin kamu kenal</span>
+                            <h2>Teman untukmu</h2>
+                        </div>
+                    </div>
+
+                    <div class="writer-list">
+                        @forelse($friendCandidates as $friend)
+                            <div class="person-row">
+                                <a href="{{ route('users.show', $friend) }}" class="person-main" aria-label="Lihat profil {{ $friend->name }}">
+                                    <div class="writer-avatar friend-avatar">{{ strtoupper(substr($friend->name, 0, 1)) }}</div>
+                                    <div class="person-copy">
+                                        <strong>{{ $friend->name }}</strong>
+                                        <span>
+                                            @if(($friend->mutual_count ?? 0) > 0)
+                                                {{ $friend->mutual_count }} koneksi yang sama
+                                            @else
+                                                {{ $friend->followers_count ?? 0 }} pengikut
+                                            @endif
+                                        </span>
+                                    </div>
+                                </a>
+
+                                <button type="button" class="follow-btn" data-url="{{ route('users.follow', $friend) }}" onclick="toggleFollow(this.dataset.url, this)">Ikuti</button>
+                            </div>
+                        @empty
+                            <p class="sidebar-empty">Belum ada rekomendasi teman baru.</p>
+                        @endforelse
+                    </div>
+                </section>
+
+                {{-- Artikel + podcast paling sering dikunjungi --}}
+                <section class="sidebar-card popular-card">
+                    <div class="sidebar-heading">
+                        <div>
                             <span>Lagi ramai</span>
-                            <h2>Banyak dibaca</h2>
+                            <h2>Sering dikunjungi</h2>
                         </div>
                     </div>
 
                     <div class="trending-list">
-                        @forelse($trendingArticles as $index => $article)
-                            <a
-                                href="{{ route('articles.show', $article->slug) }}"
-                                class="trend-row"
-                            >
-                                <span class="trend-no">
-                                    {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}
-                                </span>
+                        @forelse($trendingContent as $index => $trend)
+                            @php
+                                $popularItem = $trend['item'];
+                                $popularType = $trend['type'];
+                            @endphp
 
-                                <div>
-                                    <strong>{{ $article->title }}</strong>
-                                    <span>{{ number_format($article->views_count) }} dibaca</span>
+                            <a href="{{ $popularType === 'podcast' ? route('podcasts.show', $popularItem) : route('articles.show', $popularItem->slug) }}" class="trend-row">
+                                <span class="trend-no">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                                <div class="trend-copy">
+                                    <strong>{{ $popularItem->title }}</strong>
+                                    <span class="trend-meta">
+                                        @if($popularType === 'podcast')
+                                            <span class="trend-type"><i class="fas {{ $popularItem->media_type === 'video' ? 'fa-video' : 'fa-headphones' }}"></i>{{ $popularItem->media_type === 'video' ? 'Video Podcast' : 'Audio Podcast' }}</span>
+                                            · {{ number_format($trend['views']) }} tontonan
+                                        @else
+                                            <span class="trend-type"><i class="far fa-file-lines"></i>Artikel</span>
+                                            · {{ number_format($trend['views']) }} dibaca
+                                        @endif
+                                    </span>
                                 </div>
                             </a>
                         @empty
-                            <p class="sidebar-empty">Belum ada artikel yang sedang ramai.</p>
+                            <p class="sidebar-empty">Belum ada konten yang sering dikunjungi.</p>
                         @endforelse
                     </div>
                 </section>
@@ -1190,23 +1286,46 @@
         .feed-article-cover img,.feed-article-placeholder{width:100%;height:100%;object-fit:cover;border-radius:19px}
         .feed-article-placeholder{display:grid;place-items:center;text-align:center;color:var(--home-brown)}
 
+        .feed-podcast-link{color:inherit;text-decoration:none}
+        .feed-podcast-card{display:grid;grid-template-columns:220px minmax(0,1fr);gap:22px;padding:20px;border-radius:25px;background:#fff}
+        .feed-podcast-visual{position:relative;width:220px;aspect-ratio:16/9;align-self:center;overflow:hidden;border-radius:19px;background:linear-gradient(135deg,var(--home-brown),#17333F)}
+        .feed-podcast-visual img{width:100%;height:100%;object-fit:cover;transition:.25s}
+        .feed-podcast-card:hover .feed-podcast-visual img{transform:scale(1.035)}
+        .feed-podcast-placeholder{width:100%;height:100%;display:grid;place-items:center;color:#fff;font-size:28px}
+        .feed-podcast-format{position:absolute;left:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border-radius:999px;background:rgba(48,18,10,.82);color:#fff;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+        .feed-podcast-copy{min-width:0;display:flex;flex-direction:column;justify-content:center}
+        .feed-podcast-card h2{margin:0;font:800 23px/1.26 'Plus Jakarta Sans',sans-serif;color:var(--home-brown-dark)}
+        .feed-podcast-card p{margin:9px 0 0;font-size:13px;line-height:1.6;color:var(--home-muted)}
+        .podcast-type{color:var(--home-orange)}
+        .feed-podcast-meta{margin-top:17px;display:flex;flex-wrap:wrap;gap:13px;font-size:11px;color:#8E7A73}
+
         .home-sidebar{position:sticky;top:112px;display:grid;gap:16px}
         .sidebar-card{padding:20px;border-radius:23px}
         .sidebar-heading h2{margin:5px 0 0;font:800 20px 'Plus Jakarta Sans',sans-serif;color:var(--home-brown-dark)}
-        .writer-list,.trending-list{display:grid;gap:5px}
-        .writer-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0}
-        .writer-info{gap:9px;min-width:0}
-        .writer-avatar{width:36px;height:36px;flex:0 0 36px;background:var(--home-linen)}
-        .writer-info>div:last-child{display:grid;gap:1px}
-        .writer-info strong{font-size:12px;color:var(--home-brown)}
-        .writer-info span{font-size:10px;color:var(--home-muted)}
-        .follow-btn{padding:7px 11px;border:0;border-radius:999px;background:var(--home-brown);color:#fff;font-size:10px;font-weight:800;cursor:pointer}
+        .writer-list,.trending-list{display:grid;gap:4px}
+        .person-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--home-border)}
+        .person-row:first-child{border-top:0}
+        .person-main{min-width:0;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;border-radius:12px;transition:.18s}
+        .person-main:hover .person-copy strong{color:var(--home-orange)}
+        .writer-avatar{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:50%;background:var(--home-linen);color:var(--home-brown);font:800 11px 'Plus Jakarta Sans',sans-serif}
+        .friend-avatar{background:var(--home-blue)}
+        .person-copy{min-width:0;display:grid;gap:2px}
+        .person-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--home-brown);transition:.18s}
+        .person-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;color:var(--home-muted)}
+        .follow-btn{padding:7px 11px;border:0;border-radius:999px;background:var(--home-brown);color:#fff;font-size:10px;font-weight:800;cursor:pointer;transition:.18s}
+        .follow-btn:hover{background:var(--home-orange)}
+        .follow-btn.is-following{background:#fff;color:var(--home-brown);box-shadow:inset 0 0 0 1px var(--home-border)}
+        .follow-btn:disabled{opacity:.55;cursor:wait}
+        .popular-card{background:linear-gradient(180deg,#fff 0%,#FFFBF8 100%)}
         .trend-row{display:grid;grid-template-columns:29px minmax(0,1fr);gap:9px;padding:11px 0;border-top:1px solid var(--home-border);text-decoration:none;color:inherit}
         .trend-row:first-child{border-top:0}
         .trend-no{font:800 15px 'Plus Jakarta Sans',sans-serif;color:#C8B6AF}
-        .trend-row>div{display:grid;gap:4px}
-        .trend-row strong{font-size:12px;color:var(--home-brown)}
-        .trend-row span:last-child{font-size:9px;color:var(--home-muted)}
+        .trend-copy{min-width:0;display:grid;gap:4px}
+        .trend-row strong{font-size:12px;line-height:1.4;color:var(--home-brown);transition:.18s}
+        .trend-row:hover strong{color:var(--home-orange)}
+        .trend-meta{font-size:9px;color:var(--home-muted)}
+        .trend-type{display:inline-flex;align-items:center;gap:4px;color:var(--home-muted)}
+        .trend-type i{font-size:9px;color:var(--home-orange)}
         .sidebar-empty{font-size:11px;color:var(--home-muted)}
         .feed-empty{padding:55px 24px;border:1px dashed var(--home-border);border-radius:24px;text-align:center;background:#fff}
 
@@ -1224,6 +1343,11 @@
             .feed-article-card{grid-template-columns:minmax(0,1fr) 100px;gap:14px;padding:17px}
             .feed-article-cover{width:100px;height:100px}
             .feed-article-card p{display:none}
+            .feed-podcast-card{grid-template-columns:110px minmax(0,1fr);gap:14px;padding:15px}
+            .feed-podcast-visual{width:110px}
+            .feed-podcast-card h2{font-size:17px}
+            .feed-podcast-card p{display:none}
+            .feed-podcast-format{left:6px;bottom:6px;padding:5px 7px;font-size:7px}
             .home-sidebar{grid-template-columns:1fr}
         }
     </style>
@@ -1633,28 +1757,38 @@
                 });
 
             window.toggleFollow =
-                async function (userId, button) {
-                    if (!csrfToken || !button) return;
+                async function (url, button) {
+                    if (!csrfToken || !button || !url) return;
 
-                    const response = await fetch(
-                        `/users/${userId}/follow`,
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'application/json'
+                    const originalText = button.textContent.trim();
+                    button.disabled = true;
+
+                    try {
+                        const response = await fetch(
+                            url,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'Accept': 'application/json'
+                                }
                             }
+                        );
+
+                        const data = await response.json();
+
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Follow request failed');
                         }
-                    );
 
-                    const data = await response.json();
-
-                    if (data.success) {
-                        button.textContent =
-                            data.following
-                                ? 'Mengikuti'
-                                : 'Ikuti';
+                        button.textContent = data.following ? 'Mengikuti' : 'Ikuti';
+                        button.classList.toggle('is-following', !!data.following);
+                    } catch (error) {
+                        console.error('Follow error:', error);
+                        button.textContent = originalText;
+                    } finally {
+                        button.disabled = false;
                     }
                 };
         });

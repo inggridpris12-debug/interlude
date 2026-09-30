@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use App\Models\ArticleView;
+use App\Models\Podcast;
 use App\Models\Thread;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -42,26 +43,112 @@ class DashboardController extends Controller
 
         $followingIds = $user->following()->pluck('users.id');
 
+        /*
+        |------------------------------------------------------------------
+        | PENULIS UNTUKMU
+        |------------------------------------------------------------------
+        | Akun yang aktif membuat artikel / podcast dan belum diikuti.
+        */
         $recommendedWriters = User::query()
             ->withCount([
-                'articles' => fn ($query) => $query->where('is_published', true),
+                'articles as published_articles_count' => fn ($query) => $query
+                    ->where('is_published', true),
+                'podcasts as published_podcasts_count' => fn ($query) => $query
+                    ->where('is_published', true)
+                    ->whereNotNull('published_at')
+                    ->where('published_at', '<=', now()),
             ])
             ->where('id', '!=', $user->id)
             ->when(
                 $followingIds->isNotEmpty(),
                 fn ($query) => $query->whereNotIn('id', $followingIds)
             )
-            ->orderByDesc('articles_count')
-            ->take(4)
-            ->get();
+            ->orderByRaw('(published_articles_count + published_podcasts_count) DESC')
+            ->take(2)
+            ->get()
+            ->filter(fn ($writer) => (
+                $writer->published_articles_count
+                + $writer->published_podcasts_count
+            ) > 0)
+            ->values();
 
-        $trendingArticles = Article::query()
+        /*
+        |------------------------------------------------------------------
+        | TEMAN UNTUKMU
+        |------------------------------------------------------------------
+        | Kandidat user lain yang belum diikuti. Prioritas sederhana:
+        | makin banyak akun yang sama-sama diikuti, makin tinggi posisinya.
+        | Tidak butuh migration baru.
+        */
+        $excludeFriendIds = $followingIds
+            ->concat([$user->id])
+            ->concat($recommendedWriters->pluck('id'))
+            ->unique()
+            ->values();
+
+        $friendCandidates = User::query()
+            ->with(['following:id'])
+            ->withCount('followers')
+            ->whereNotIn('id', $excludeFriendIds->all())
+            ->take(20)
+            ->get()
+            ->map(function ($candidate) use ($followingIds) {
+                $candidate->mutual_count = $candidate->following
+                    ->pluck('id')
+                    ->intersect($followingIds)
+                    ->count();
+
+                return $candidate;
+            })
+            ->sort(function ($a, $b) {
+                if ($a->mutual_count !== $b->mutual_count) {
+                    return $b->mutual_count <=> $a->mutual_count;
+                }
+
+                return $b->followers_count <=> $a->followers_count;
+            })
+            ->take(3)
+            ->values();
+
+        /*
+        |------------------------------------------------------------------
+        | SERING DIKUNJUNGI
+        |------------------------------------------------------------------
+        | Gabungkan artikel + podcast lalu urutkan berdasarkan views_count.
+        */
+        $popularArticles = Article::query()
             ->with('user')
             ->where('is_published', true)
-            ->where('published_at', '>=', now()->subDays(7))
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
             ->orderByDesc('views_count')
             ->take(5)
-            ->get();
+            ->get()
+            ->map(fn ($article) => [
+                'type' => 'article',
+                'item' => $article,
+                'views' => (int) ($article->views_count ?? 0),
+            ]);
+
+        $popularPodcasts = Podcast::query()
+            ->with('user')
+            ->where('is_published', true)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now())
+            ->orderByDesc('views_count')
+            ->take(5)
+            ->get()
+            ->map(fn ($podcast) => [
+                'type' => 'podcast',
+                'item' => $podcast,
+                'views' => (int) ($podcast->views_count ?? 0),
+            ]);
+
+        $trendingContent = $popularArticles
+            ->concat($popularPodcasts)
+            ->sortByDesc('views')
+            ->take(5)
+            ->values();
 
         $feedItems = $this->buildFeed(
             feed: $feed,
@@ -73,7 +160,8 @@ class DashboardController extends Controller
             'feed',
             'feedItems',
             'recommendedWriters',
-            'trendingArticles',
+            'friendCandidates',
+            'trendingContent',
             'categories'
         ));
     }
@@ -108,15 +196,21 @@ class DashboardController extends Controller
             });
     }
 
+    private function visiblePodcasts()
+    {
+        return Podcast::query()
+            ->with('user')
+            ->withCount(['likes', 'comments'])
+            ->where('is_published', true)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', now());
+    }
+
     private function buildFeed(
         string $feed,
         int $userId,
         Collection $followingIds
     ): Collection {
-        if ($feed === 'podcast') {
-            return collect();
-        }
-
         $threads = $this->visibleThreads(
             $userId,
             $followingIds
@@ -126,6 +220,17 @@ class DashboardController extends Controller
             ->with('user')
             ->withCount(['likes', 'comments'])
             ->where('is_published', true);
+
+        $podcasts = $this->visiblePodcasts();
+
+        if ($feed === 'podcast') {
+            return (clone $podcasts)
+                ->latest('published_at')
+                ->take(20)
+                ->get()
+                ->map(fn ($podcast) => $this->wrapFeedItem('podcast', $podcast))
+                ->values();
+        }
 
         if ($feed === 'mengikuti') {
             if ($followingIds->isEmpty()) {
@@ -146,8 +251,17 @@ class DashboardController extends Controller
                 ->get()
                 ->map(fn ($article) => $this->wrapFeedItem('article', $article));
 
+            $podcastItems = (clone $podcasts)
+                ->whereIn('user_id', $followingIds)
+                ->latest('published_at')
+                ->take(20)
+                ->get()
+                ->map(fn ($podcast) => $this->wrapFeedItem('podcast', $podcast));
+
             return $this->sortChronologically(
-                $threadItems->concat($articleItems)
+                $threadItems
+                    ->concat($articleItems)
+                    ->concat($podcastItems)
             )->take(20)->values();
         }
 
@@ -255,8 +369,37 @@ class DashboardController extends Controller
                 );
             });
 
+        $podcastItems = (clone $podcasts)
+            ->latest('published_at')
+            ->take(30)
+            ->get()
+            ->map(function ($podcast) use (
+                $followingIds,
+                $categoryScores
+            ) {
+                $score = 0;
+
+                if ($followingIds->contains($podcast->user_id)) {
+                    $score += 4;
+                }
+
+                if (
+                    $podcast->category
+                    && isset($categoryScores[$podcast->category])
+                ) {
+                    $score += $categoryScores[$podcast->category];
+                }
+
+                return $this->wrapFeedItem(
+                    'podcast',
+                    $podcast,
+                    $score
+                );
+            });
+
         return $threadItems
             ->concat($articleItems)
+            ->concat($podcastItems)
             ->sort(function ($a, $b) {
                 if ($a['score'] !== $b['score']) {
                     return $b['score'] <=> $a['score'];
@@ -273,9 +416,10 @@ class DashboardController extends Controller
         $item,
         int $score = 0
     ): array {
-        $timestamp = $type === 'article'
-            ? ($item->published_at ?? $item->created_at)
-            : $item->created_at;
+        $timestamp = match ($type) {
+            'article', 'podcast' => $item->published_at ?? $item->created_at,
+            default => $item->created_at,
+        };
 
         return [
             'type' => $type,

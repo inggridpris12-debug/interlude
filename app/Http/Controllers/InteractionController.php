@@ -13,11 +13,9 @@ class InteractionController extends Controller
         $user = auth()->user();
 
         if ($article->isLikedBy($user)) {
-            // Unlike
             $article->likes()->where('user_id', $user->id)->delete();
             $liked = false;
         } else {
-            // Like
             $article->likes()->create(['user_id' => $user->id]);
             $liked = true;
         }
@@ -34,11 +32,9 @@ class InteractionController extends Controller
         $user = auth()->user();
 
         if ($article->isBookmarkedBy($user)) {
-            // Remove bookmark
             $article->bookmarks()->where('user_id', $user->id)->delete();
             $bookmarked = false;
         } else {
-            // Add bookmark
             $article->bookmarks()->create(['user_id' => $user->id]);
             $bookmarked = true;
         }
@@ -69,7 +65,6 @@ class InteractionController extends Controller
     {
         $follower = auth()->user();
 
-        // Can't follow yourself
         if ($follower->id === $user->id) {
             return response()->json([
                 'success' => false,
@@ -78,11 +73,9 @@ class InteractionController extends Controller
         }
 
         if ($follower->isFollowing($user)) {
-            // Unfollow
             $follower->following()->detach($user->id);
             $following = false;
         } else {
-            // Follow
             $follower->following()->attach($user->id);
             $following = true;
         }
