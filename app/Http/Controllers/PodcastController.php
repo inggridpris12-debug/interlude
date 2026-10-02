@@ -6,6 +6,7 @@ use App\Models\Podcast;
 use App\Models\PodcastComment;
 use App\Models\PodcastSeries;
 use App\Models\PodcastView;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -119,6 +120,8 @@ class PodcastController extends Controller
 
     public function store(Request $request)
     {
+        $maxUploadKb = max(1, (int) Setting::get('podcast_upload_max_mb', 200)) * 1024;
+
         $request->validate([
             'title' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -129,7 +132,7 @@ class PodcastController extends Controller
             'duration_seconds' => ['nullable', 'integer', 'min:0'],
             'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'thumbnail_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'media_file' => ['required', 'file', 'max:204800'],
+            'media_file' => ['required', 'file', 'max:'.$maxUploadKb],
         ]);
 
         $media = $request->file('media_file');

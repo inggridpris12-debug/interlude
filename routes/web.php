@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminArticleController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminPodcastController;
+use App\Http\Controllers\Admin\AdminSettingController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
@@ -171,6 +174,39 @@ Route::middleware(['auth:admin', 'prevent-back-history'])
 
         Route::get('/users', [AdminController::class, 'users'])
             ->name('users');
+
+        // Artikel & Kurasi
+        Route::get('/articles', [AdminArticleController::class, 'index'])
+            ->name('articles');
+
+        Route::post('/articles/{article}/publish', [AdminArticleController::class, 'togglePublish'])
+            ->name('articles.publish');
+
+        Route::post('/articles/{article}/feature', [AdminArticleController::class, 'toggleFeature'])
+            ->name('articles.feature');
+
+        Route::delete('/articles/{article}', [AdminArticleController::class, 'destroy'])
+            ->name('articles.destroy');
+
+        // Podcast Hub
+        Route::get('/podcasts', [AdminPodcastController::class, 'index'])
+            ->name('podcasts');
+
+        Route::post('/podcasts/{podcast}/publish', [AdminPodcastController::class, 'togglePublish'])
+            ->name('podcasts.publish');
+
+        Route::delete('/podcasts/{podcast}', [AdminPodcastController::class, 'destroy'])
+            ->name('podcasts.destroy');
+
+        // Pengaturan
+        Route::get('/settings', [AdminSettingController::class, 'edit'])
+            ->name('settings');
+
+        Route::put('/settings', [AdminSettingController::class, 'update'])
+            ->name('settings.update');
+
+        Route::put('/settings/account', [AdminSettingController::class, 'updateAccount'])
+            ->name('settings.account');
 
         Route::post('/logout', [AdminController::class, 'logout'])
             ->name('logout');

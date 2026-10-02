@@ -15,7 +15,7 @@
                 </h1>
 
                 <p class="mt-2 max-w-2xl text-sm text-[#796B65]">
-                    Pantau aktivitas komunitas, publikasi cerita, dan antrean moderasi kampus dari satu tempat.
+                    {{ \App\Models\Setting::get('site_description', 'Pantau aktivitas komunitas, publikasi cerita, dan antrean moderasi kampus dari satu tempat.') }}
                 </p>
             </div>
 
@@ -242,6 +242,39 @@
                             <span class="flex items-center gap-2.5">
                                 <i class="fa-solid fa-shield-halved text-[#FB4D00]"></i>
                                 Moderasi &amp; Laporan Masuk
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-[#796B65]"></i>
+                        </a>
+
+                        <a
+                            href="{{ route('admin.articles') }}"
+                            class="flex items-center justify-between rounded-xl bg-white/90 px-3.5 py-3 text-xs font-bold text-[#49261D] shadow-sm transition hover:bg-white"
+                        >
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-newspaper text-[#FB4D00]"></i>
+                                Kurasi Artikel Mahasiswa
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-[#796B65]"></i>
+                        </a>
+
+                        <a
+                            href="{{ route('admin.podcasts') }}"
+                            class="flex items-center justify-between rounded-xl bg-white/90 px-3.5 py-3 text-xs font-bold text-[#49261D] shadow-sm transition hover:bg-white"
+                        >
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-podcast text-[#FB4D00]"></i>
+                                Podcast Hub Kampus
+                            </span>
+                            <i class="fa-solid fa-chevron-right text-[10px] text-[#796B65]"></i>
+                        </a>
+
+                        <a
+                            href="{{ route('admin.settings') }}"
+                            class="flex items-center justify-between rounded-xl bg-white/90 px-3.5 py-3 text-xs font-bold text-[#49261D] shadow-sm transition hover:bg-white"
+                        >
+                            <span class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-sliders text-[#FB4D00]"></i>
+                                Pengaturan Platform
                             </span>
                             <i class="fa-solid fa-chevron-right text-[10px] text-[#796B65]"></i>
                         </a>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +21,12 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
+        abort_unless(
+            Setting::bool('registration_open', true),
+            403,
+            'Pendaftaran mahasiswa sedang ditutup oleh kurator.'
+        );
+
         return view('auth.register');
     }
 
@@ -30,6 +37,12 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        abort_unless(
+            Setting::bool('registration_open', true),
+            403,
+            'Pendaftaran mahasiswa sedang ditutup oleh kurator.'
+        );
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],

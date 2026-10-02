@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'Panel Kurator' }} - {{ config('app.name', 'Interlude') }}</title>
+    @php
+        $siteName = \App\Models\Setting::get('site_name', 'Interlude');
+        $siteTagline = \App\Models\Setting::get('site_tagline', 'Ruang Tukar Cerita Mahasiswa');
+    @endphp
+
+    <title>{{ $title ?? 'Panel Kurator' }} - {{ $siteName }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,7 +66,7 @@
 
                     <div>
                         <div class="font-['Plus_Jakarta_Sans'] text-xl font-extrabold tracking-[-0.03em] text-[#49261D]">
-                            Interlude
+                            {{ $siteName }}
                         </div>
 
                         <div class="mt-0.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-[#FB4D00]">
@@ -120,10 +125,10 @@
 
                 {{-- Artikel --}}
                 <a
-                    href="#"
-                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#49261D] transition hover:bg-[#FFFAF6]"
+                    href="{{ route('admin.articles') }}"
+                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition {{ request()->routeIs('admin.articles*') ? 'bg-[#49261D] text-white shadow-[0_10px_24px_rgba(73,38,29,0.16)]' : 'text-[#49261D] hover:bg-[#FFFAF6]' }}"
                 >
-                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-[#FFEDE3] text-[#49261D] transition group-hover:bg-white">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] transition {{ request()->routeIs('admin.articles*') ? 'bg-white/15 text-white' : 'bg-[#FFEDE3] text-[#49261D] group-hover:bg-white' }}">
                         <i class="fa-solid fa-newspaper text-sm"></i>
                     </span>
 
@@ -131,19 +136,16 @@
                 </a>
 
                 {{-- Podcast --}}
-                <div class="mb-1 flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#49261D]/45">
-
-                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-[#FFEDE3]/60">
+                <a
+                    href="{{ route('admin.podcasts') }}"
+                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition {{ request()->routeIs('admin.podcasts*') ? 'bg-[#49261D] text-white shadow-[0_10px_24px_rgba(73,38,29,0.16)]' : 'text-[#49261D] hover:bg-[#FFFAF6]' }}"
+                >
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] transition {{ request()->routeIs('admin.podcasts*') ? 'bg-white/15 text-white' : 'bg-[#FFEDE3] text-[#49261D] group-hover:bg-white' }}">
                         <i class="fa-solid fa-podcast text-sm"></i>
                     </span>
 
                     <span>Podcast Hub</span>
-
-                    <span class="ml-auto rounded-full bg-[#F1ECE8] px-2 py-1 text-[8px] font-extrabold uppercase tracking-wide text-[#796B65]">
-                        Segera
-                    </span>
-
-                </div>
+                </a>
 
                 {{-- Reports --}}
                 <a
@@ -160,10 +162,10 @@
 
                 {{-- Settings --}}
                 <a
-                    href="#"
-                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-[#49261D] transition hover:bg-[#FFFAF6]"
+                    href="{{ route('admin.settings') }}"
+                    class="group mb-1 flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold transition {{ request()->routeIs('admin.settings*') ? 'bg-[#49261D] text-white shadow-[0_10px_24px_rgba(73,38,29,0.16)]' : 'text-[#49261D] hover:bg-[#FFFAF6]' }}"
                 >
-                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-[#FFEDE3] text-[#49261D] transition group-hover:bg-white">
+                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] transition {{ request()->routeIs('admin.settings*') ? 'bg-white/15 text-white' : 'bg-[#FFEDE3] text-[#49261D] group-hover:bg-white' }}">
                         <i class="fa-solid fa-sliders text-sm"></i>
                     </span>
 
@@ -234,7 +236,7 @@
 
                     <div class="min-w-0">
                         <p class="text-[9px] font-extrabold uppercase tracking-[0.13em] text-[#FB4D00]">
-                            Dewan Kurasi Kampus
+                            {{ $siteTagline }}
                         </p>
 
                         <p class="truncate font-['Plus_Jakarta_Sans'] text-sm font-bold text-[#49261D] sm:text-base">
